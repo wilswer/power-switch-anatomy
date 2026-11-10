@@ -1,0 +1,14 @@
+# OS / editor
+.DS_Store
+*.swp
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node (if ever used for tooling)
+node_modules/
+
+# Server PID and log
+.run/

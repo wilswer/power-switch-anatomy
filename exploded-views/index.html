@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Power Switch Anatomy</title>
+    <meta name="description" content="Interactive exploded 3D drawings of a SiC MOSFET, a GaN HEMT and a silicon IGBT, one transistor cell each." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+    <script type="module" src="js/main.js"></script>
+  </head>
+  <body>
+    <header class="masthead">
+      <div class="wrap masthead-inner">
+        <div class="title-block">
+          <p class="eyebrow">Exploded cell drawings · not to scale</p>
+          <h1>Power Switch Anatomy</h1>
+          <p class="lede">
+            One transistor cell from each of the three main power switches, pulled apart layer by layer. Drag to
+            rotate, scroll to zoom, and click any layer to learn what it does.
+          </p>
+        </div>
+        <nav class="device-tabs" role="tablist" aria-label="Device">
+          <button type="button" role="tab" data-device="sic" aria-selected="true">
+            <span class="tab-name">SiC MOSFET</span><span class="tab-meta">1200 V · vertical</span>
+          </button>
+          <button type="button" role="tab" data-device="gan" aria-selected="false" tabindex="-1">
+            <span class="tab-name">GaN HEMT</span><span class="tab-meta">650 V · lateral</span>
+          </button>
+          <button type="button" role="tab" data-device="igbt" aria-selected="false" tabindex="-1">
+            <span class="tab-name">Si IGBT</span><span class="tab-meta">1200 V · vertical</span>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="wrap workbench">
+      <section class="stage" aria-label="3D model of one cell">
+        <div class="viewport" id="viewport">
+          <canvas id="scene" aria-label="3D model. Drag to rotate, scroll to zoom, click a layer for details."></canvas>
+          <div class="overlay" aria-hidden="false">
+            <svg id="leaders" aria-hidden="true"></svg>
+            <div id="labels"></div>
+          </div>
+          <p class="hint">Drag to rotate · scroll to zoom · click a layer</p>
+          <div class="legend" id="legend"></div>
+          <div class="titleblock" id="titleblock"></div>
+          <p class="loading" id="loading">Loading the 3D viewer…</p>
+        </div>
+        <div class="toolbar">
+          <div class="seg" role="group" aria-label="Mode">
+            <button type="button" data-mode="explore" aria-pressed="true">Explore</button>
+            <button type="button" data-mode="on" aria-pressed="false">Gate ON</button>
+            <button type="button" data-mode="block" aria-pressed="false">Blocking</button>
+          </div>
+          <label class="slider" for="explode"
+            ><span>Explode</span><input type="range" id="explode" min="0" max="1" step="0.01" value="1"
+          /></label>
+          <label class="check"><input type="checkbox" id="labels-toggle" checked /> Labels</label>
+          <button type="button" id="reset-view" class="ghost">Reset view</button>
+        </div>
+      </section>
+
+      <aside class="panel" aria-label="Details">
+        <section id="mode-card" aria-live="polite"></section>
+        <section id="part-card" aria-live="polite"></section>
+        <section id="parts-list"></section>
+      </aside>
+    </main>
+
+    <section class="reference" id="primer">
+      <div class="wrap">
+        <p class="eyebrow">Background</p>
+        <h2>The physics in brief</h2>
+        <p class="intro">
+          Six ideas explain almost everything in the drawings. Read them in order if the terms are new.
+        </p>
+        <div class="primer-grid">
+          <article>
+            <h3>What a power switch has to do</h3>
+            <p>
+              A power converter chops electricity on and off thousands to millions of times per second. Each
+              switch must block hundreds of volts with almost no leakage when off, carry tens to hundreds of amps
+              with a small voltage drop when on, and move between the two in nanoseconds to microseconds. Every
+              loss turns into heat.
+            </p>
+          </article>
+          <article>
+            <h3>Doping: n-type and p-type</h3>
+            <p>
+              Pure semiconductors barely conduct. A few impurity atoms change that. Atoms with one extra electron
+              (phosphorus, nitrogen) donate free electrons: n-type. Atoms with one electron fewer (boron,
+              aluminum) leave holes, missing electrons that act like positive carriers: p-type. A + means heavily
+              doped and a − means lightly doped. The drawings color n-type blue and p-type red.
+            </p>
+          </article>
+          <article>
+            <h3>The pn junction and depletion</h3>
+            <p>
+              Where p-type meets n-type, electrons and holes near the boundary cancel out, leaving a depletion
+              region with no free carriers. It behaves like an insulator. Make the n side positive (reverse bias)
+              and the depletion region widens and holds off the voltage. The electric field inside it is
+              strongest at the junction.
+            </p>
+          </article>
+          <article>
+            <h3>Bandgap and critical field</h3>
+            <p>
+              The bandgap is the energy needed to free an electron from its atom: 1.1 eV in silicon, about 3.3 eV
+              in SiC and 3.4 eV in GaN. A wider bandgap allows a much higher field before freed electrons knock
+              others loose and set off an avalanche. This critical field is about ten times higher in SiC and
+              GaN, so their voltage-blocking layers can be about ten times thinner.
+            </p>
+          </article>
+          <article>
+            <h3>How a gate makes a channel</h3>
+            <p>
+              The gate is an electrode on a thin insulator, forming a capacitor with the semiconductor below. A
+              positive gate voltage pulls electrons toward the surface of a p-type region until a thin layer of it
+              behaves as n-type. That inversion channel connects source to drain. Remove the gate voltage and
+              the channel disappears.
+            </p>
+          </article>
+          <article>
+            <h3>Unipolar versus bipolar</h3>
+            <p>
+              MOSFETs and HEMTs conduct with electrons only. They behave like resistors and switch off quickly,
+              with no stored charge. An IGBT also injects holes, so both carriers flood its drift layer. That
+              lowers its voltage drop at high current, but the extra charge has to be cleared at every turn-off,
+              which slows it down.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="reference" id="compare">
+      <div class="wrap">
+        <p class="eyebrow">Side by side</p>
+        <h2>Si, SiC and GaN compared</h2>
+        <p class="intro">Typical values. Real devices vary by manufacturer and generation.</p>
+
+        <h3 class="table-title">The materials</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Property</th>
+                <th scope="col">Silicon</th>
+                <th scope="col">4H-SiC</th>
+                <th scope="col">GaN</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Bandgap (eV)</th>
+                <td>1.12</td>
+                <td>3.26</td>
+                <td>3.39</td>
+              </tr>
+              <tr>
+                <th scope="row">Critical field (MV/cm)</th>
+                <td>≈ 0.3</td>
+                <td>≈ 2.5–3</td>
+                <td>≈ 3.3</td>
+              </tr>
+              <tr>
+                <th scope="row">Electron mobility (cm²/V·s)</th>
+                <td>≈ 1400</td>
+                <td>≈ 950</td>
+                <td>≈ 1000 bulk, ≈ 2000 in a 2DEG</td>
+              </tr>
+              <tr>
+                <th scope="row">Saturated electron velocity (10<sup>7</sup> cm/s)</th>
+                <td>1.0</td>
+                <td>2.0</td>
+                <td>2.5</td>
+              </tr>
+              <tr>
+                <th scope="row">Thermal conductivity (W/cm·K)</th>
+                <td>1.5</td>
+                <td>≈ 3.7</td>
+                <td>≈ 1.3–2.3</td>
+              </tr>
+              <tr>
+                <th scope="row">Relative permittivity</th>
+                <td>11.7</td>
+                <td>9.7</td>
+                <td>9.0</td>
+              </tr>
+              <tr>
+                <th scope="row">
+                  Baliga figure of merit, vs. Si
+                  <span class="th-note">ε·μ·E<sub>c</sub>³: how little drift resistance the material needs for a given
+                    voltage</span>
+                </th>
+                <td>1</td>
+                <td>≈ 300–500×</td>
+                <td>≈ 700–1000×</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="table-title">The devices as built</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col"></th>
+                <th scope="col">Si IGBT</th>
+                <th scope="col">SiC MOSFET</th>
+                <th scope="col">GaN HEMT</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Current flow</th>
+                <td>Vertical</td>
+                <td>Vertical</td>
+                <td>Lateral</td>
+              </tr>
+              <tr>
+                <th scope="row">Carriers</th>
+                <td>Electrons and holes (bipolar)</td>
+                <td>Electrons (unipolar)</td>
+                <td>Electrons in a 2DEG (unipolar)</td>
+              </tr>
+              <tr>
+                <th scope="row">Voltage classes</th>
+                <td>600 V – 6.5 kV</td>
+                <td>650 V – 3.3 kV</td>
+                <td>15 – 650 V</td>
+              </tr>
+              <tr>
+                <th scope="row">Typical switching frequency</th>
+                <td>2–20 kHz</td>
+                <td>20–200 kHz</td>
+                <td>100 kHz – several MHz</td>
+              </tr>
+              <tr>
+                <th scope="row">On-state behavior</th>
+                <td>A fixed ≈ 0.7 V knee plus a small slope; V<sub>CE(sat)</sub> ≈ 1.5–2 V</td>
+                <td>A resistor, R<sub>DS(on)</sub></td>
+                <td>A resistor, R<sub>DS(on)</sub></td>
+              </tr>
+              <tr>
+                <th scope="row">Reverse conduction</th>
+                <td>Needs a separate antiparallel diode</td>
+                <td>Built-in body diode (≈ 3 V drop)</td>
+                <td>No body diode; the channel conducts in reverse with no reverse-recovery charge</td>
+              </tr>
+              <tr>
+                <th scope="row">Gate drive</th>
+                <td>+15 V on, 0 to −15 V off</td>
+                <td>+15 to +18 V on, −3 to −5 V off</td>
+                <td>+5 to +6 V on (max ≈ 7 V), 0 V off</td>
+              </tr>
+              <tr>
+                <th scope="row">Max junction temperature</th>
+                <td>150–175 °C</td>
+                <td>175–200 °C</td>
+                <td>≈ 150 °C</td>
+              </tr>
+              <tr>
+                <th scope="row">Typical uses</th>
+                <td>Motor drives, traction, wind, industrial</td>
+                <td>EV inverters, fast chargers, solar</td>
+                <td>Phone and laptop chargers, server power, LiDAR</td>
+              </tr>
+              <tr>
+                <th scope="row">Main weak spot</th>
+                <td>Tail current at turn-off</td>
+                <td>Gate oxide reliability, wafer cost</td>
+                <td>Dynamic on-resistance, a fragile gate</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <article class="aside" id="why-no-gan-igbt">
+          <h3>Why there is no GaN IGBT</h3>
+          <p>
+            An IGBT works by flooding a thick drift layer with electrons and holes. In GaN they recombine within
+            nanoseconds, because GaN has a direct bandgap (the same property that makes it good for LEDs). The
+            flood never builds up. Good p-type GaN is also hard to make, since its magnesium dopants activate
+            poorly, and affordable native GaN wafers for thick vertical devices are still emerging. So GaN power
+            transistors are HEMTs. Silicon carbide IGBTs do exist, in research, for 10 kV and above.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <footer class="wrap footer">
+      <p>
+        Geometry is schematic and not to scale. Dimensions, doping and fields are typical textbook and datasheet
+        values. The vertical-device fields use the standard one-dimensional abrupt-junction model; the GaN field
+        shape is illustrative.
+      </p>
+    </footer>
+
+    <script>
+      // If the 3D library cannot be fetched, the module never runs; say so instead of spinning forever.
+      setTimeout(function () {
+        if (window.__viewerBooted) return;
+        var el = document.getElementById('loading');
+        if (!el) return;
+        el.textContent =
+          'The page could not load three.js from cdn.jsdelivr.net. Check the internet connection and reload.';
+        el.className = 'loading is-error';
+      }, 12000);
+    </script>
+  </body>
+</html>
