@@ -38,7 +38,7 @@ export function renderFieldPlot(svg, { profile, xMax, xLabel, Ec, eMax, markers 
   for (const m of markers) {
     if (m.x <= 0 || m.x > xMax) continue;
     s += `<line class="fp-marker" x1="${f(X(m.x))}" x2="${f(X(m.x))}" y1="${M.t}" y2="${H - M.b}"/>`;
-    s += `<text class="fp-marker-label" x="${f(X(m.x) - 4)}" y="${M.t + 9}" text-anchor="end">${m.label}</text>`;
+    s += `<text class="fp-marker-label" x="${f(X(m.x) - 4)}" y="${H - M.b - 6}" text-anchor="end">${m.label}</text>`;
   }
 
   const pts = profile.map(([x, e]) => `${f(X(x))},${f(Y(Math.min(e, eMax)))}`);

@@ -32,6 +32,10 @@
             One transistor cell from each of the three main power switches, pulled apart layer by layer. Drag to
             rotate, scroll to zoom, and click any layer to learn what it does.
           </p>
+          <button type="button" class="cta" data-tour-start data-label="Take the guided tour">
+            <span class="tour-start-label">Take the guided tour</span>
+            <span class="cta-meta"><span data-tour-length></span> steps · about 10 minutes</span>
+          </button>
         </div>
         <nav class="device-tabs" role="tablist" aria-label="Device">
           <button type="button" role="tab" data-device="sic" aria-selected="true">
@@ -60,6 +64,23 @@
           <div class="titleblock" id="titleblock"></div>
           <p class="loading" id="loading">Loading the 3D viewer…</p>
         </div>
+        <section class="tour-card" id="tour-card" aria-label="Guided tour" hidden>
+          <div class="tour-progress" id="tour-progress"></div>
+          <div class="tour-body">
+            <div class="tour-text" aria-live="polite">
+              <p class="kicker" id="tour-kicker"></p>
+              <h3 id="tour-title"></h3>
+              <p id="tour-text"></p>
+              <p class="tour-readout" id="tour-readout" hidden></p>
+            </div>
+            <div class="tour-nav">
+              <button type="button" class="ghost" id="tour-replay" hidden>Replay sweep</button>
+              <button type="button" class="ghost" id="tour-back">Back</button>
+              <button type="button" class="primary" id="tour-next" aria-describedby="tour-title tour-text">Next</button>
+              <button type="button" class="link" id="tour-exit">Exit tour</button>
+            </div>
+          </div>
+        </section>
         <div class="toolbar">
           <div class="seg" role="group" aria-label="Mode">
             <button type="button" data-mode="explore" aria-pressed="true">Explore</button>
@@ -71,6 +92,7 @@
           /></label>
           <label class="check"><input type="checkbox" id="labels-toggle" checked /> Labels</label>
           <button type="button" id="reset-view" class="ghost">Reset view</button>
+          <button type="button" class="tour-btn" data-tour-start aria-pressed="false">Tour</button>
         </div>
       </section>
 

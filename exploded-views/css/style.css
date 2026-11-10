@@ -858,6 +858,16 @@ h1 {
   font: 400 10px var(--font-mono);
 }
 
+/* A halo in the panel color keeps labels readable where they cross the curve. */
+.fp-marker-label,
+.fp-peak-label,
+.fp-ec-label {
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
 .fp-axis-label {
   fill: var(--ink-2);
   font: 400 10.5px var(--font-body);
@@ -912,6 +922,180 @@ h1 {
   flex: 1;
   height: 8px;
   border: 1px solid var(--line);
+}
+
+/* ---------- tour ---------- */
+
+.cta {
+  appearance: none;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin-top: 16px;
+  padding: 10px 16px;
+  font: 600 15px/1.1 var(--font-display);
+  letter-spacing: 0.02em;
+  color: var(--bg);
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  cursor: pointer;
+}
+
+.cta:hover {
+  background: color-mix(in srgb, var(--ink) 86%, var(--bg));
+}
+
+.cta-meta {
+  font: 400 11px/1.1 var(--font-mono);
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--bg) 70%, transparent);
+}
+
+.tour-btn {
+  appearance: none;
+  padding: 9px 15px;
+  font: 600 13.5px/1 var(--font-display);
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--ink);
+  cursor: pointer;
+}
+
+.tour-btn:hover {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.tour-btn[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.is-touring .viewport {
+  height: calc(var(--stage-h) - 185px);
+  min-height: 300px;
+}
+
+.tour-card {
+  padding: 0 18px 16px;
+  background: var(--surface);
+  border: 1px solid var(--ink);
+}
+
+.tour-progress {
+  display: flex;
+  gap: 3px;
+  margin: 0 -18px 10px;
+}
+
+.tour-progress button {
+  appearance: none;
+  flex: 1;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.tour-progress button::before {
+  content: "";
+  display: block;
+  height: 4px;
+  background: var(--line);
+}
+
+.tour-progress button.chapter-start {
+  margin-left: 8px;
+}
+
+.tour-progress button.is-done::before {
+  background: var(--ink-3);
+}
+
+.tour-progress button.is-current::before {
+  background: var(--ink);
+  height: 6px;
+}
+
+.tour-progress button:hover::before {
+  background: var(--ink-2);
+}
+
+.tour-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 14px 28px;
+}
+
+.tour-text {
+  min-width: 0;
+}
+
+.tour-text h3 {
+  font: 600 21px/1.15 var(--font-display);
+  margin: 0 0 6px;
+  text-wrap: balance;
+}
+
+.tour-text #tour-text {
+  margin: 0;
+  max-width: 74ch;
+  color: var(--ink-2);
+}
+
+.tour-readout {
+  margin: 8px 0 0;
+  font: 500 12px/1.4 var(--font-mono);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.tour-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.primary {
+  appearance: none;
+  min-width: 6.5rem;
+  padding: 10px 18px;
+  font: 600 14px/1 var(--font-display);
+  letter-spacing: 0.03em;
+  color: var(--bg);
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  cursor: pointer;
+}
+
+.primary:hover {
+  background: color-mix(in srgb, var(--ink) 86%, var(--bg));
+}
+
+.ghost:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.link {
+  appearance: none;
+  padding: 9px 4px;
+  font: 400 13px/1 var(--font-body);
+  color: var(--ink-3);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.link:hover {
+  color: var(--ink);
 }
 
 /* ---------- reference sections ---------- */
@@ -1075,6 +1259,26 @@ td {
 
   .slider input {
     width: 120px;
+  }
+
+  .legend {
+    left: 8px;
+    bottom: 8px;
+    gap: 3px;
+    padding: 5px 7px;
+    font-size: 10px;
+  }
+
+  .lg-note {
+    display: none;
+  }
+
+  .tour-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tour-nav {
+    justify-content: flex-start;
   }
 }
 

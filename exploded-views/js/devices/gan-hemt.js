@@ -292,6 +292,7 @@ export default {
     y0: 3.75,
     y1: 4.7,
     twodeg: { partId: 'twodeg', meshIndex: 1, y0: Y2DEG[0], y1: Y2DEG[1], xEnd: 5 },
+    fieldPlatePart: 'fieldplate', // hidden in the model when the field plate is switched off
     params: { Lgd: LGD, xFP: X_FP_UM, Ec: 3.3e6 },
     axis: 'Distance from the gate edge toward the drain (µm)',
     caption: `Field along the 2DEG, from the gate edge to the drain (illustrative shape). The shaded area equals the voltage.`,

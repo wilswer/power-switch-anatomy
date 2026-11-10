@@ -37,6 +37,14 @@ export class Viewer {
     this.controls.enablePan = false;
     this.controls.rotateSpeed = 0.7;
     this.controls.zoomSpeed = 0.8;
+    // A user drag or zoom always wins over a scripted camera move.
+    this.controls.addEventListener('start', () => {
+      this._fly = null;
+      this._dragging = true;
+    });
+    this.controls.addEventListener('end', () => {
+      this._dragging = false;
+    });
 
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0x6b7785, 1.6));
     const key = new THREE.DirectionalLight(0xffffff, 2.0);
@@ -66,6 +74,7 @@ export class Viewer {
     this.selected = null;
     this.hovered = null;
     this.showLabels = true;
+    this.hiddenParts = new Set();
     this.frameHooks = [];
 
     this.raycaster = new THREE.Raycaster();
@@ -100,6 +109,7 @@ export class Viewer {
     this.parts.clear();
     this.selected = null;
     this.hovered = null;
+    this.hiddenParts = new Set();
     this.device = device;
 
     for (const def of device.parts) {
@@ -207,6 +217,12 @@ export class Viewer {
     this.applyLook();
   }
 
+  // Parts to leave out of the model regardless of mode (e.g. a field plate switched off).
+  setHiddenParts(ids) {
+    this.hiddenParts = new Set(ids);
+    this.applyLook();
+  }
+
   setLabels(on) {
     this.showLabels = on;
     this._applyViewOffset();
@@ -215,6 +231,7 @@ export class Viewer {
 
   resetView() {
     if (!this.fit) return;
+    this._fly = null;
     const c = this._center(this.explode);
     this.controls.target.copy(c);
     this.camera.position.copy(c).addScaledVector(VIEW_DIR, this._fitDistance(this.explode));
@@ -223,12 +240,30 @@ export class Viewer {
     this.controls.update();
   }
 
+  // Glide the camera to look from direction `dir` (from the model's center) at
+  // `zoom` times the default framing distance.
+  flyTo(dir, zoom = 1, seconds = 1.3) {
+    if (!this.fit || this._dragging) return;
+    const from = new THREE.Spherical().setFromVector3(this._v.copy(this.camera.position).sub(this.controls.target));
+    const to = new THREE.Spherical().setFromVector3(this._v.set(...dir));
+    if (to.theta - from.theta > Math.PI) to.theta -= 2 * Math.PI;
+    if (from.theta - to.theta > Math.PI) to.theta += 2 * Math.PI;
+    this._fly = {
+      from,
+      to,
+      zoomFrom: from.radius / this._fitDistance(this.explode),
+      zoomTo: zoom,
+      t: 0,
+      seconds: reduceMotion ? 0 : seconds,
+    };
+  }
+
   // Opacity, highlight and visibility for every part, from the current state.
   applyLook() {
     const xray = this.mode !== 'explore';
     for (const p of this.parts.values()) {
       const { def } = p;
-      const visible = !def.onlyIn || def.onlyIn.includes(this.mode);
+      const visible = (!def.onlyIn || def.onlyIn.includes(this.mode)) && !this.hiddenParts.has(def.id);
       p.group.visible = visible;
       if (p.labelEl) p.labelEl.hidden = !visible || !this.showLabels;
 
@@ -416,6 +451,15 @@ export class Viewer {
       this._updateGuides();
     }
     for (const p of this.parts.values()) p.group.position.y = p.def.group * GAP * this.explode;
+    if (this._fly) {
+      const f = this._fly;
+      f.t = f.seconds > 0 ? Math.min(1, f.t + dt / f.seconds) : 1;
+      const k = f.t < 0.5 ? 4 * f.t ** 3 : 1 - (-2 * f.t + 2) ** 3 / 2; // ease in-out
+      const radius = lerp(f.zoomFrom, f.zoomTo, k) * this._fitDistance(this.explode);
+      this._v.setFromSphericalCoords(radius, lerp(f.from.phi, f.to.phi, k), lerp(f.from.theta, f.to.theta, k));
+      this.camera.position.copy(this.controls.target).add(this._v);
+      if (f.t >= 1) this._fly = null;
+    }
     this.controls.update();
     for (const hook of this.frameHooks) hook(dt, this.explode);
     this.renderer.render(this.scene, this.camera);

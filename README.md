@@ -14,6 +14,10 @@ layer to read what it is and why it matters. Three modes:
 - **Blocking**: a voltage slider, the depletion region and the electric-field profile, from a
   1D abrupt-junction model for the vertical devices and an illustrative shape for GaN.
 
+A **guided tour** (masthead button or Tour in the toolbar) walks through all three devices in
+18 steps: it sets the device, mode and camera, highlights the part being discussed and sweeps
+the blocking voltage. Arrow keys step, Esc exits, and leaving midway lets you resume.
+
 Below the viewer: a short physics primer and Si / SiC / GaN comparison tables.
 
 ### Run it
@@ -42,15 +46,24 @@ internet connection.
 | `exploded-views/js/viewer.js` | three.js scene, exploding, picking, callout labels |
 | `exploded-views/js/effects.js` | Moving carriers and field slices |
 | `exploded-views/js/main.js` | Panel, controls, state |
-| `tests/` | `node --test` suites for the physics and the geometry |
+| `exploded-views/js/tour.js` | The tour's steps (pure data) |
+| `exploded-views/js/tour-player.js` | Plays the tour: step card, navigation, voltage sweeps |
+| `tests/` | `node --test` suites for the physics, the geometry and the tour data |
+| `tests/e2e/` | Browser tests of the tour (Playwright, headless Chromium) |
 
 ### Tests
 
 ```bash
-npm test
+npm test             # unit tests, a second or two
+npm install          # once, for the browser tests
+npx playwright install chromium
+npm run test:e2e     # browser tests, about a minute (starts its own server)
 ```
 
 The physics tests check the field models against hand calculations and check that the area
 under each field profile equals the applied voltage. The geometry tests check that each
 device's layers tile the cell with no overlaps or gaps, and that every part has an
-explanation.
+explanation. The tour tests check that every step points at a real device, mode and visible
+part, and that the numbers the tour text quotes match the physics model. The browser tests
+cover how the tour behaves when the user interrupts it, plus keyboard, focus and reduced
+motion.

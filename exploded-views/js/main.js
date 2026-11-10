@@ -4,6 +4,7 @@ import { blockingResult } from './physics.js';
 import { renderFieldPlot } from './fieldplot.js';
 import { Viewer } from './viewer.js';
 import { Effects } from './effects.js';
+import { createTourPlayer } from './tour-player.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 
@@ -20,6 +21,7 @@ const state = {
 
 let viewer = null;
 let effects = null;
+let tour = null;
 
 const els = {
   tabs: [...document.querySelectorAll('[data-device]')],
@@ -34,6 +36,8 @@ const els = {
   legend: $('#legend'),
   titleblock: $('#titleblock'),
   loading: $('#loading'),
+  tourStarts: [...document.querySelectorAll('[data-tour-start]')],
+  tourReadout: $('#tour-readout'),
 };
 
 const device = () => DEVICES[state.device];
@@ -44,6 +48,7 @@ const fmtField = (E) => `${(E / 1e6).toFixed(2)} MV/cm`;
 
 function setDevice(id, { fromHash = false } = {}) {
   if (!DEVICES[id]) return;
+  tour?.stopSweep();
   state.device = id;
   state.selected = null;
   if (!fromHash) history.replaceState(null, '', `#${id}`);
@@ -62,6 +67,7 @@ function setDevice(id, { fromHash = false } = {}) {
 }
 
 function setMode(mode) {
+  tour?.stopSweep();
   state.mode = mode;
   for (const b of els.modes) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
   const sel = state.selected && partById(state.selected);
@@ -87,6 +93,57 @@ function revealPartCard() {
   p.scrollTo({ top: els.partCard.offsetTop, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 }
 
+// ---------- tour ----------
+
+// Put the page into the scene a tour step describes (see tour.js).
+function applyTourStep(st) {
+  if (st.block) Object.assign(state.block[st.device], st.block);
+  state.explode = st.explode;
+  els.explode.value = String(st.explode);
+  viewer?.setExplode(st.explode);
+  if (state.device !== st.device) setDevice(st.device);
+  setMode(st.mode); // also re-renders the panel with the step's Blocking settings
+  select(st.focus);
+  viewer?.flyTo(st.view, st.zoom);
+}
+
+// Used by the tour's voltage sweeps; mirrors what dragging the slider does.
+// It only touches the display when that device is on screen in Blocking mode.
+function setVoltage(V, deviceId) {
+  const { Vmax } = DEVICES[deviceId].blocking;
+  state.block[deviceId].V = Math.min(Vmax, Math.max(0, V));
+  if (state.device !== deviceId || state.mode !== 'block') return;
+  const slider = $('#volt');
+  if (!slider) return;
+  slider.value = String(state.block[deviceId].V);
+  updateBlocking();
+}
+
+// The toolbar button is an on/off toggle; the masthead button starts, resumes
+// or scrolls back to the tour, and its label says which.
+function updateTourButtons() {
+  const active = tour.isActive();
+  const at = active ? tour.currentStep() : tour.resumeStep();
+  for (const b of els.tourStarts) {
+    if (b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', String(active));
+    const label = b.querySelector('.tour-start-label');
+    if (!label) continue;
+    label.textContent = active
+      ? `Back to the tour (step ${at + 1})`
+      : at > 0
+        ? `Resume the tour (step ${at + 1})`
+        : b.dataset.label;
+  }
+}
+
+// The field plate is drawn only while the Blocking settings include it.
+function syncHiddenParts() {
+  const b = device().blocking;
+  const hide = Boolean(b.fieldPlatePart) && state.mode === 'block' && !state.block[state.device].fieldPlate;
+  viewer?.setHiddenParts(hide ? [b.fieldPlatePart] : []);
+  if (hide && state.selected === b.fieldPlatePart) select(null);
+}
+
 // ---------- panel ----------
 
 function renderAll() {
@@ -96,6 +153,8 @@ function renderAll() {
   renderPartsList();
   renderLegend();
   renderTitleblock();
+  syncHiddenParts();
+  els.tourReadout.hidden = state.mode !== 'block';
 }
 
 function renderModeCard() {
@@ -150,6 +209,7 @@ function renderBlockCard() {
     <div class="ramp"><span>0</span><i style="background:${FIELD_GRADIENT_CSS}"></i><span>critical field</span></div>
     ${b.text.map((p) => `<p>${p}</p>`).join('')}`;
   $('#volt').addEventListener('input', (e) => {
+    tour?.stopSweep();
     s.V = Number(e.target.value);
     updateBlocking();
   });
@@ -174,6 +234,10 @@ function updateBlocking() {
     ratio >= 1
       ? 'Avalanche breakdown: the peak field has reached the critical field'
       : `Blocking · peak field at ${Math.round(ratio * 100)} % of critical`;
+  // The same numbers in short, inside the tour card, for layouts where the panel is out of sight.
+  els.tourReadout.textContent = `${s.V} V · peak ${fmtField(r.Epk)} · ${
+    ratio >= 1 ? 'avalanche breakdown' : `${Math.round(ratio * 100)} % of critical`
+  }`;
 
   const rows = [
     ['Peak field', fmtField(r.Epk)],
@@ -209,6 +273,7 @@ function updateBlocking() {
     peak,
   });
   effects?.setBlocking(r);
+  syncHiddenParts();
 }
 
 function renderPartCard() {
@@ -329,11 +394,45 @@ function wireUI() {
 
   window.addEventListener('hashchange', () => setDevice(location.hash.slice(1), { fromHash: true }));
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && state.selected) select(null);
+    if (e.key === 'Escape') {
+      if (tour?.isActive()) tour.stop();
+      else if (state.selected) select(null);
+      return;
+    }
+    if (!tour?.isActive() || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return; // e.g. Alt+← is browser Back
+    if (e.target instanceof Element && e.target.closest('input, select, textarea, [contenteditable], .device-tabs')) return;
+    e.preventDefault();
+    if (e.key === 'ArrowRight') tour.next();
+    else tour.back();
   });
+  for (const b of els.tourStarts) {
+    b.addEventListener('click', () => {
+      if (!tour) return;
+      if (!tour.isActive()) tour.start({ from: b });
+      else if (b.hasAttribute('aria-pressed')) tour.stop();
+      else tour.reveal();
+    });
+  }
 }
 
 function boot() {
+  tour = createTourPlayer({
+    els: {
+      card: $('#tour-card'),
+      progress: $('#tour-progress'),
+      kicker: $('#tour-kicker'),
+      title: $('#tour-title'),
+      text: $('#tour-text'),
+      back: $('#tour-back'),
+      next: $('#tour-next'),
+      exit: $('#tour-exit'),
+      replay: $('#tour-replay'),
+    },
+    applyStep: applyTourStep,
+    setVoltage,
+    onChange: updateTourButtons,
+  });
   wireUI();
   const fromHash = location.hash.slice(1);
   if (DEVICES[fromHash]) state.device = fromHash;
@@ -366,6 +465,8 @@ function boot() {
     els.loading.classList.add('is-error');
   }
   window.__viewerBooted = true;
+  // Read-only handle for the browser tests in tests/e2e/.
+  window.__pageDebug = { state, viewer, effects, tour };
   setDevice(state.device, { fromHash: true });
 }
 

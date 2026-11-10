@@ -30,7 +30,8 @@ def main():
     handler = functools.partial(NoCacheHandler, directory=args.directory)
     with http.server.ThreadingHTTPServer((args.bind, args.port), handler) as httpd:
         print(
-            f"Serving {args.directory} on http://{args.bind}:{args.port}/", flush=True
+            f"Serving {args.directory} on http://{args.bind}:{httpd.server_address[1]}/",
+            flush=True,
         )
         httpd.serve_forever()
 
