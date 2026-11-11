@@ -524,6 +524,90 @@
       </div>
     </section>
 
+    <section class="reference" id="failures">
+      <div class="wrap">
+        <p class="eyebrow">Reliability</p>
+        <h2>Failure modes</h2>
+        <p class="intro">
+          How these devices fail in service, what you can measure as they age, and how manufacturers and
+          designers keep it from happening. Each card links to the part in the 3D views, and part cards there list
+          the ways that part can fail.
+        </p>
+
+        <div class="fm-intro">
+          <figure class="fm-bathtub">
+            <svg viewBox="0 0 520 230" role="img" aria-labelledby="bathtub-title">
+              <title id="bathtub-title">The bathtub curve: the failure rate falls during early life, stays low and constant, then rises with wear-out</title>
+              <line class="bt-axis" x1="40" y1="20" x2="40" y2="180" />
+              <line class="bt-axis" x1="40" y1="180" x2="505" y2="180" />
+              <line class="bt-phase" x1="175" y1="30" x2="175" y2="180" />
+              <line class="bt-phase" x1="375" y1="30" x2="375" y2="180" />
+              <path class="bt-curve" d="M48,34 C80,120 120,150 175,152 L375,152 C430,152 470,128 500,46" />
+              <text class="bt-label" x="108" y="48" text-anchor="middle">Early failures</text>
+              <text class="bt-sub" x="108" y="64" text-anchor="middle">Weibull β &lt; 1</text>
+              <text class="bt-label" x="275" y="128" text-anchor="middle">Random failures</text>
+              <text class="bt-sub" x="275" y="144" text-anchor="middle">β ≈ 1, a constant rate</text>
+              <text class="bt-label" x="440" y="48" text-anchor="middle">Wear-out</text>
+              <text class="bt-sub" x="440" y="64" text-anchor="middle">β &gt; 1</text>
+              <text class="bt-ex" x="108" y="200" text-anchor="middle">oxide flaws, voids</text>
+              <text class="bt-ex" x="275" y="200" text-anchor="middle">cosmic rays, overstress</text>
+              <text class="bt-ex" x="440" y="200" text-anchor="middle">fatigue, drying capacitors</text>
+              <text class="bt-axis-label" x="272" y="222" text-anchor="middle">Time in service</text>
+              <text class="bt-axis-label" transform="translate(22 100) rotate(-90)" text-anchor="middle">Failure rate</text>
+            </svg>
+            <figcaption>
+              The classic picture of when failures happen. Screening and burn-in remove most early failures before
+              shipping; derating and protection keep random ones rare; wear-out is what lifetime models and
+              condition monitoring are about. Drawn schematically, not to scale.
+            </figcaption>
+          </figure>
+          <div class="fm-notes">
+            <article class="aside">
+              <h3>How lifetime is estimated</h3>
+              <ol class="fm-steps">
+                <li><b>Mission profile:</b> the load and ambient temperature over years of use, such as a drive cycle for a car or a year of sun for a solar inverter.</li>
+                <li><b>Electro-thermal model:</b> the losses, through the package's thermal resistances (as in the Heat view), give the junction temperature over time.</li>
+                <li><b>Cycle counting:</b> rainflow counting splits that temperature history into cycles, each with a swing ΔT<sub>j</sub>, a mean or minimum and a duration.</li>
+                <li><b>Lifetime model:</b> a model fitted to power-cycling tests, such as the CIPS08 model, gives the cycles to failure for each kind of cycle.</li>
+                <li><b>Damage sum:</b> Miner's rule adds up the fraction of life each cycle uses; a sum of 1 means end of life. Monte Carlo over the scatter of the parameters turns that into a failure probability, for example the time by which 10 % have failed (B10).</li>
+              </ol>
+            </article>
+            <article class="aside">
+              <h3>Watching devices age</h3>
+              <p>
+                Condition monitoring tracks health indicators in operation: the on-state voltage (lifted bond
+                wires), the thermal resistance (cracked solder), the threshold voltage and gate leakage (SiC and
+                GaN gates), and capacitor ESR. The difficulty is that all of them also change with temperature and
+                load, so degradation has to be separated from operating point, by measuring under reference
+                conditions or with a model of the healthy device. The junction temperature itself is read through
+                temperature-sensitive electrical parameters, such as the voltage drop at a small sense current.
+              </p>
+            </article>
+            <article class="aside">
+              <h3>Qualification</h3>
+              <p>
+                Before a device is sold, samples go through standard stress tests that accelerate each mechanism:
+                for example the JEDEC JESD22 test methods, AEC-Q101 for automotive discretes, ECPE AQG 324 for
+                automotive power modules, IEC 60749-34 for power cycling, and JEDEC JEP173 and JEP180 for GaN. Passing them shows a device survives a given stress, not how long it will
+                last in a particular use; that takes the mission-profile approach.
+              </p>
+            </article>
+          </div>
+        </div>
+
+        <div class="fm-filter-row">
+          <span class="fm-filter-label">Show</span>
+          <div class="seg small" role="group" aria-label="Show failure modes for">
+            <button type="button" data-fm-filter="all" aria-pressed="true">All</button>
+            <button type="button" data-fm-filter="sic" aria-pressed="false">SiC MOSFET</button>
+            <button type="button" data-fm-filter="gan" aria-pressed="false">GaN HEMT</button>
+            <button type="button" data-fm-filter="igbt" aria-pressed="false">Si IGBT</button>
+          </div>
+        </div>
+        <div id="fm-list"></div>
+      </div>
+    </section>
+
     <footer class="wrap footer">
       <p>
         Geometry is schematic and not to scale. Dimensions, doping and fields are typical textbook and datasheet

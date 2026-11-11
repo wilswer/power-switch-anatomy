@@ -19,6 +19,7 @@ import { Viewer } from './viewer.js';
 import { Effects } from './effects.js';
 import { PackageEffects } from './package-effects.js';
 import { createTourPlayer } from './tour-player.js';
+import { FAILURES, FAILURE_GROUPS } from './failures.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 
@@ -594,6 +595,7 @@ function renderPartCard() {
     <h4>Why it matters</h4>
     <p>${p.info.why}</p>
     ${p.info.look ? `<h4>Look for it</h4><p>${p.info.look}</p>` : ''}
+    ${renderPartFailures(p.id)}
     ${link ? `<p><button type="button" class="ghost jump" data-jump>${linkLabel} →</button></p>` : ''}`;
   $('.close', els.partCard).addEventListener('click', () => select(null));
   $('[data-jump]', els.partCard)?.addEventListener('click', () => {
@@ -695,6 +697,77 @@ function renderTitleblock() {
     <div><span>${d.drawing.sizeLabel ?? 'CELL'}</span><b>${d.drawing.size ?? d.drawing.cell}</b></div>`;
 }
 
+// ---------- failure modes ----------
+
+const failuresOf = (partId) =>
+  FAILURES.filter((f) => f.parts.some(([d, sc, id]) => d === state.device && sc === state.scale && id === partId));
+
+function renderPartFailures(partId) {
+  const fs = failuresOf(partId);
+  if (!fs.length) return '';
+  return `<h4>How it can fail</h4>
+    <ul class="fails">${fs.map((f) => `<li><a href="#fm-${f.id}" data-fm="${f.id}">${f.title}</a></li>`).join('')}</ul>`;
+}
+
+function renderFailures() {
+  const list = $('#fm-list');
+  if (!list) return;
+  const tag = (id) => `<span class="tag">${DEVICES[id].name}</span>`;
+  const row = (k, v) => `<div><dt>${k}</dt><dd>${v}</dd></div>`;
+  list.innerHTML = FAILURE_GROUPS.map(
+    (g) => `<section class="fm-group" data-group="${g.id}">
+      <h3 class="fm-group-title">${g.title}</h3>
+      <p class="fm-group-intro">${g.intro}</p>
+      <div class="fm-cards">${FAILURES.filter((f) => f.group === g.id)
+        .map(
+          (f) => `<article class="fm-card" id="fm-${f.id}" data-devices="${f.devices.join(' ')}">
+            <p class="fm-where">${f.where}</p>
+            <h4>${f.title}</h4>
+            <p class="fm-tags">${f.devices.map(tag).join('')}</p>
+            <dl class="fm-facts">
+              ${row('What happens', f.what)}
+              ${row('What drives it', f.driven)}
+              ${row('What you can measure', f.measure)}
+              ${row('How it is prevented', f.prevent)}
+              ${row('How it is tested', f.test)}
+            </dl>
+            <button type="button" class="ghost jump" data-fm-show="${f.id}">See where in 3D →</button>
+          </article>`,
+        )
+        .join('')}</div>
+    </section>`,
+  ).join('');
+}
+
+function filterFailures(device) {
+  for (const b of document.querySelectorAll('[data-fm-filter]')) {
+    b.setAttribute('aria-pressed', String(b.dataset.fmFilter === device));
+  }
+  for (const c of document.querySelectorAll('.fm-card')) {
+    c.hidden = device !== 'all' && !c.dataset.devices.split(' ').includes(device);
+  }
+  for (const g of document.querySelectorAll('.fm-group')) g.hidden = !g.querySelector('.fm-card:not([hidden])');
+}
+
+// Jump from a failure card to the 3D view that shows it.
+function showFailure(id) {
+  const { show } = FAILURES.find((f) => f.id === id);
+  if (tour?.isActive()) tour.stop();
+  setDevice(show.device, { scale: show.scale });
+  setMode(show.mode);
+  select(show.part);
+  $('.stage').scrollIntoView({ block: 'start', behavior: reduceMotion() ? 'auto' : 'smooth' });
+}
+
+// Jump from a part card to a failure card, without touching the URL (its hash holds the view).
+function revealFailure(id) {
+  filterFailures('all');
+  const card = $(`#fm-${id}`);
+  card.scrollIntoView({ block: 'start', behavior: reduceMotion() ? 'auto' : 'smooth' });
+  card.classList.add('is-flash');
+  setTimeout(() => card.classList.remove('is-flash'), 2000);
+}
+
 // ---------- wiring ----------
 
 function wireUI() {
@@ -720,6 +793,20 @@ function wireUI() {
     viewer?.setLabels(state.labels);
   });
   els.reset.addEventListener('click', () => viewer?.resetView());
+
+  for (const b of document.querySelectorAll('[data-fm-filter]')) {
+    b.addEventListener('click', () => filterFailures(b.dataset.fmFilter));
+  }
+  $('#fm-list')?.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-fm-show]');
+    if (b) showFailure(b.dataset.fmShow);
+  });
+  els.partCard.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-fm]');
+    if (!a) return;
+    e.preventDefault();
+    revealFailure(a.dataset.fm);
+  });
 
   els.partsList.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-part]');
@@ -778,6 +865,7 @@ function boot() {
     setLevel: setSweepLevel,
     onChange: updateTourButtons,
   });
+  renderFailures();
   wireUI();
   const fromHash = parseHash();
   if (DEVICES[fromHash.id]) {

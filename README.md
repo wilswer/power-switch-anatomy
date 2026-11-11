@@ -60,8 +60,13 @@ Part cards link the scales ("See it in the package", "Open the cell view", "See 
 
 Below the viewer: a short physics primer, "Converters in brief" (rectifiers, inverters, DC-DC
 and AC-AC converters, and why switching wastes so little), Si / SiC / GaN comparison tables,
-and a field guide: the scales from cell to product, which products use which switch and
-package, how to read a datasheet, and safety notes for opening equipment.
+a field guide (the scales from cell to product, which products use which switch and
+package, how to read a datasheet, and safety notes for opening equipment), and, last,
+**Failure modes**: when devices fail (the bathtub curve), how lifetime is estimated from a
+mission profile, condition monitoring, qualification standards, and cards for 14 failure
+mechanisms. Each card gives what happens, what drives it, what you can measure, how it is
+prevented and how it is tested, filters by device, and jumps to the part in 3D; part cards
+in the 3D views list the failure modes of that part.
 
 ### Run it
 
@@ -94,6 +99,7 @@ internet connection.
 | `exploded-views/js/package-effects.js` | Current dots and temperature colors (packages) |
 | `exploded-views/js/heatplot.js` | The temperature chart in the Heat panel |
 | `exploded-views/js/wavesplot.js` | The waveform chart in the In action panel |
+| `exploded-views/js/failures.js` | The failure modes (pure data), with the 3D parts each concerns |
 | `exploded-views/js/main.js` | Panel, controls, state |
 | `exploded-views/js/tour.js` | The tour's steps (pure data) |
 | `exploded-views/js/tour-player.js` | Plays the tour: step card, navigation, voltage sweeps |
@@ -117,7 +123,8 @@ tests check that no two solid parts overlap, that every bond wire lands on metal
 heat, current and cross-scale links point at real parts, and that each package's
 junction-to-case resistance lands in the range datasheets quote. The product tests check
 the same geometry rules, and that the numbers their texts quote (power, voltages, the PWM
-averaging to a sine wave) match their waveforms. The tour tests check that
+averaging to a sine wave) match their waveforms. The failure-mode tests check that every
+card is complete and that every part it points at exists. The tour tests check that
 every step points at a real device, scale, mode and visible part, and that the numbers the
 tour and package texts quote match the models. The browser tests cover how the tour behaves
 when the user interrupts it, keyboard, focus and reduced motion, and the package views:
