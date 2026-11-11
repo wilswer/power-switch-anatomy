@@ -17,9 +17,11 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+# Pinned to Ubuntu 24.04: ubuntu-latest is moving to Ubuntu 26, where
+# installing Playwright's system packages failed on unresolvable apt mirrors.
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -28,19 +30,22 @@ jobs:
       - run: npm test
 
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # Only the browser: the runner image already has the libraries Chromium
+      # needs (it ships Google Chrome), so no apt packages (--with-deps).
+      - run: npx playwright install chromium
       - run: npm run test:e2e
 
   deploy:
     needs: [test, e2e]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
