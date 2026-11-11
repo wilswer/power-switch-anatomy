@@ -1,15 +1,16 @@
 import { TOUR, CHAPTERS } from './tour.js';
 
 // Plays the guided tour: shows the step card, steps back and forth, and runs
-// voltage sweeps. Setting up each scene is delegated to `applyStep`, and a
-// sweep drives the page through `setVoltage(V, deviceId)`, so this module owns
-// no page state. `onChange` fires whenever the tour starts, stops or moves.
+// sweeps (of the blocking voltage or the power loss). Setting up each scene is
+// delegated to `applyStep`, and a sweep drives the page through
+// `setLevel(step, value)`, so this module owns no page state. `onChange` fires
+// whenever the tour starts, stops or moves.
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const REDUCED_STAGES = 4; // with reduced motion, sweeps jump in this many steps
 const REDUCED_STAGE_MS = 1100;
 
-export function createTourPlayer({ els, applyStep, setVoltage, onChange }) {
+export function createTourPlayer({ els, applyStep, setLevel, onChange }) {
   let index = -1; // -1 = not touring
   let resumeAt = 0;
   let sweepFrame = 0;
@@ -27,6 +28,14 @@ export function createTourPlayer({ els, applyStep, setVoltage, onChange }) {
       title="Step ${i + 1}: ${st.title}"></button>`;
   }).join('');
 
+  // The sizer holds every step's text, invisible, so the card keeps the height
+  // of the longest one. Each copy gets a readout line, since any step can show one.
+  const kickerOf = (i) => `Tour · ${CHAPTERS[TOUR[i].chapter]} · step ${i + 1} of ${TOUR.length}`;
+  els.sizer.innerHTML = TOUR.map(
+    (st, i) => `<div><p class="kicker">${kickerOf(i)}</p><h3>${st.title}</h3><p class="tour-para">${st.body}</p>
+      <p class="tour-readout">1200 V · peak 3.39 MV/cm · avalanche breakdown</p></div>`,
+  ).join('');
+
   function stopSweep() {
     if (sweepFrame) cancelAnimationFrame(sweepFrame);
     if (sweepTimer) clearTimeout(sweepTimer);
@@ -36,15 +45,16 @@ export function createTourPlayer({ els, applyStep, setVoltage, onChange }) {
 
   // The sweep always targets the step's own device; the page ignores it for
   // the display if the user has since switched to another device or mode.
-  function startSweep({ from, to, seconds }, device) {
+  function startSweep(st) {
     stopSweep();
-    const at = (k) => Math.round((from + (to - from) * k) / 10) * 10;
+    const { from, to, seconds, step = 10 } = st.sweep;
+    const at = (k) => Math.round((from + (to - from) * k) / step) * step;
     if (reduceMotion) {
       let stage = 0;
-      setVoltage(from, device);
+      setLevel(st, from);
       const nextStage = () => {
         stage += 1;
-        setVoltage(at(stage / REDUCED_STAGES), device);
+        setLevel(st, at(stage / REDUCED_STAGES));
         sweepTimer = stage < REDUCED_STAGES ? setTimeout(nextStage, REDUCED_STAGE_MS) : 0;
       };
       sweepTimer = setTimeout(nextStage, REDUCED_STAGE_MS);
@@ -53,7 +63,7 @@ export function createTourPlayer({ els, applyStep, setVoltage, onChange }) {
     const t0 = performance.now();
     const tick = (now) => {
       const k = Math.min(1, (now - t0) / (seconds * 1000));
-      setVoltage(at(k), device);
+      setLevel(st, at(k));
       sweepFrame = k < 1 ? requestAnimationFrame(tick) : 0;
     };
     sweepFrame = requestAnimationFrame(tick);
@@ -61,14 +71,16 @@ export function createTourPlayer({ els, applyStep, setVoltage, onChange }) {
 
   function render() {
     const st = TOUR[index];
-    els.kicker.textContent = `Tour · ${CHAPTERS[st.chapter]} · step ${index + 1} of ${TOUR.length}`;
+    els.kicker.textContent = kickerOf(index);
     els.title.textContent = st.title;
     els.text.innerHTML = st.body;
-    const backHadFocus = document.activeElement === els.back;
+    // A button that disables itself hands its focus to Next.
+    const hadFocus = document.activeElement;
     els.back.disabled = index === 0;
-    if (backHadFocus && els.back.disabled) els.next.focus({ preventScroll: true });
+    els.replay.disabled = !st.sweep;
+    els.replay.classList.toggle('is-off', !st.sweep);
+    if ((hadFocus === els.back || hadFocus === els.replay) && hadFocus.disabled) els.next.focus({ preventScroll: true });
     els.next.textContent = index === TOUR.length - 1 ? 'Finish' : 'Next';
-    els.replay.hidden = !st.sweep;
     for (const b of els.progress.querySelectorAll('[data-step]')) {
       const i = Number(b.dataset.step);
       b.classList.toggle('is-done', i < index);
@@ -83,7 +95,7 @@ export function createTourPlayer({ els, applyStep, setVoltage, onChange }) {
     const st = TOUR[index];
     applyStep(st);
     render();
-    if (st.sweep) startSweep(st.sweep, st.device);
+    if (st.sweep) startSweep(st);
     onChange?.();
   }
 

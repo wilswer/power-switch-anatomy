@@ -67,6 +67,7 @@ export class Effects {
     this.remaining2deg = null;
     this.result = null;
     this.device = device;
+    if (!device?.gateOn) return; // a package model: see package-effects.js
     this._buildFlows(device.gateOn);
     this._buildSlices(device.blocking);
     this.setMode(this.mode);

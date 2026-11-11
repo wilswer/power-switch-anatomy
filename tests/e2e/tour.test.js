@@ -1,60 +1,8 @@
-// Browser tests for the guided tour, one per bug found in review. They start
-// their own server on a free port and drive headless Chromium (software WebGL).
-// Run with `npm run test:e2e`; needs `npx playwright install chromium` once.
-import { test, before, after } from 'node:test';
+// Browser tests for the guided tour, one per bug found in review (setup in
+// harness.js).
+import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
-import { chromium } from 'playwright';
-
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-let server;
-let browser;
-let base;
-
-before(async () => {
-  server = spawn('python3', [path.join(ROOT, 'serve.py'), '--port', '0'], {
-    stdio: ['ignore', 'pipe', 'ignore'],
-  });
-  base = await new Promise((resolve, reject) => {
-    let out = '';
-    server.stdout.on('data', (chunk) => {
-      out += chunk;
-      const m = out.match(/http:\/\/[\d.]+:(\d+)\//);
-      if (m) resolve(`http://127.0.0.1:${m[1]}/`);
-    });
-    server.on('exit', (code) => reject(new Error(`test server exited with ${code}`)));
-  });
-  browser = await chromium.launch({
-    args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
-  });
-});
-
-after(async () => {
-  await browser?.close();
-  server?.kill();
-});
-
-async function open({ viewport = { width: 1280, height: 720 }, reducedMotion = 'no-preference', hash = 'sic' } = {}) {
-  const ctx = await browser.newContext({ viewport, reducedMotion });
-  const page = await ctx.newPage();
-  const errors = [];
-  page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto(`${base}#${hash}`);
-  await page.waitForFunction(() => window.__pageDebug?.viewer);
-  return {
-    page,
-    errors,
-    close: () => ctx.close(),
-    state: () => page.evaluate(() => JSON.parse(JSON.stringify(window.__pageDebug.state))),
-    step: () => page.evaluate(() => window.__pageDebug.tour.currentStep()),
-    active: () => page.evaluate(() => window.__pageDebug.tour.isActive()),
-    goTo: (n) => page.click(`#tour-progress [data-step="${n - 1}"]`),
-  };
-}
-
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+import { open, wait } from './harness.js';
 
 test('a voltage sweep never drives another device', async () => {
   const t = await open();
@@ -242,4 +190,30 @@ test('progress segments are big enough to tap and stay out of the tab order', as
   assert.ok(info.every((b) => b.tab === '-1'));
   assert.ok(info.every((b) => b.h >= 24));
   await t.close();
+});
+
+test('the tour card keeps one size, so Next and Back never move between steps', async () => {
+  for (const viewport of [
+    { width: 1280, height: 720 },
+    { width: 390, height: 844 },
+  ]) {
+    const t = await open({ viewport });
+    await t.page.click('.cta');
+    const where = () =>
+      t.page.evaluate(() => {
+        const at = (sel) => {
+          const r = document.querySelector(sel).getBoundingClientRect();
+          return [Math.round(r.left + scrollX), Math.round(r.top + scrollY)];
+        };
+        return { next: at('#tour-next'), back: at('#tour-back'), h: document.querySelector('#tour-card').offsetHeight };
+      });
+    const first = await where();
+    const steps = await t.page.evaluate(() => document.querySelectorAll('#tour-progress [data-step]').length);
+    for (let i = 1; i < steps; i++) {
+      await t.page.click('#tour-next');
+      const now = await where();
+      assert.deepEqual(now, first, `at ${viewport.width} px, step ${i + 1} moved the buttons`);
+    }
+    await t.close();
+  }
 });

@@ -54,6 +54,7 @@ export default {
       group: 0,
       shapes: [rect(-5, -0.35, 5, 0)],
       info: {
+        link: { scale: 'package', part: 'chipSolder' },
         facts: [
           ['Material', 'Al/Ti/Ni/Ag stack'],
           ['Thickness', '≈ 1–2 µm'],
@@ -102,6 +103,7 @@ export default {
       group: 3,
       shapes: [rect(-5, 1.0, 5, c.yj)],
       info: {
+        link: { scale: 'package', part: 'igbtDies' },
         facts: [
           ['Material', 'Float-zone silicon: the wafer itself'],
           ['Thickness', '≈ 110–120 µm (for 1200 V)'],
@@ -266,6 +268,7 @@ export default {
       shapes: [c.metal],
       anchor: [4, T + 1.0],
       info: {
+        link: { scale: 'package', part: 'powerWires' },
         facts: [
           ['Material', 'Aluminum with a little silicon or copper'],
           ['Thickness', '≈ 3–5 µm'],

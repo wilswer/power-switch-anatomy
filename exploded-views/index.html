@@ -26,17 +26,19 @@
     <header class="masthead">
       <div class="wrap masthead-inner">
         <div class="title-block">
-          <p class="eyebrow">Exploded cell drawings · not to scale</p>
+          <p class="eyebrow">Exploded drawings · cells and packages · not to scale</p>
           <h1>Power Switch Anatomy</h1>
           <p class="lede">
-            One transistor cell from each of the three main power switches, pulled apart layer by layer. Drag to
-            rotate, scroll to zoom, and click any layer to learn what it does.
+            One transistor cell from each of the three main power switches, pulled apart layer by layer, and the
+            package each one comes in, at work in a real product. Drag to rotate, scroll to zoom, and click any part
+            to learn what it does.
           </p>
           <button type="button" class="cta" data-tour-start data-label="Take the guided tour">
             <span class="tour-start-label">Take the guided tour</span>
-            <span class="cta-meta"><span data-tour-length></span> steps · about 10 minutes</span>
+            <span class="cta-meta"><span data-tour-length></span> steps · about 18 minutes</span>
           </button>
         </div>
+        <div class="pickers">
         <nav class="device-tabs" role="tablist" aria-label="Device">
           <button type="button" role="tab" data-device="sic" aria-selected="true">
             <span class="tab-name">SiC MOSFET</span><span class="tab-meta">1200 V · vertical</span>
@@ -48,18 +50,31 @@
             <span class="tab-name">Si IGBT</span><span class="tab-meta">1200 V · vertical</span>
           </button>
         </nav>
+        <div class="scale-switch" role="group" aria-label="Scale">
+          <span class="scale-label">Zoom</span>
+          <button type="button" data-scale="cell" aria-pressed="true">
+            <span class="scale-name">One cell</span><span class="scale-meta">≈ 5 µm</span>
+          </button>
+          <button type="button" data-scale="package" aria-pressed="false">
+            <span class="scale-name">The package</span><span class="scale-meta"></span>
+          </button>
+          <button type="button" data-scale="app" aria-pressed="false">
+            <span class="scale-name">Application</span><span class="scale-meta"></span>
+          </button>
+        </div>
+        </div>
       </div>
     </header>
 
     <main class="wrap workbench">
-      <section class="stage" aria-label="3D model of one cell">
+      <section class="stage" aria-label="3D model">
         <div class="viewport" id="viewport">
-          <canvas id="scene" aria-label="3D model. Drag to rotate, scroll to zoom, click a layer for details."></canvas>
+          <canvas id="scene" aria-label="3D model. Drag to rotate, scroll to zoom, click a part for details."></canvas>
           <div class="overlay" aria-hidden="false">
             <svg id="leaders" aria-hidden="true"></svg>
             <div id="labels"></div>
           </div>
-          <p class="hint">Drag to rotate · scroll to zoom · click a layer</p>
+          <p class="hint">Drag to rotate · scroll to zoom · click any part</p>
           <div class="legend" id="legend"></div>
           <div class="titleblock" id="titleblock"></div>
           <p class="loading" id="loading">Loading the 3D viewer…</p>
@@ -67,16 +82,20 @@
         <section class="tour-card" id="tour-card" aria-label="Guided tour" hidden>
           <div class="tour-progress" id="tour-progress"></div>
           <div class="tour-body">
-            <div class="tour-text" aria-live="polite">
-              <p class="kicker" id="tour-kicker"></p>
-              <h3 id="tour-title"></h3>
-              <p id="tour-text"></p>
-              <p class="tour-readout" id="tour-readout" hidden></p>
+            <div class="tour-text">
+              <div class="tour-live" aria-live="polite">
+                <p class="kicker" id="tour-kicker"></p>
+                <h3 id="tour-title"></h3>
+                <p class="tour-para" id="tour-text"></p>
+                <p class="tour-readout" id="tour-readout" hidden></p>
+              </div>
+              <!-- Invisible copies of every step, stacked: the card takes the height of the longest. -->
+              <div class="tour-sizer" id="tour-sizer" aria-hidden="true"></div>
             </div>
             <div class="tour-nav">
-              <button type="button" class="ghost" id="tour-replay" hidden>Replay sweep</button>
               <button type="button" class="ghost" id="tour-back">Back</button>
               <button type="button" class="primary" id="tour-next" aria-describedby="tour-title tour-text">Next</button>
+              <button type="button" class="ghost is-off" id="tour-replay" disabled>Replay sweep</button>
               <button type="button" class="link" id="tour-exit">Exit tour</button>
             </div>
           </div>
@@ -163,6 +182,89 @@
               with no stored charge. An IGBT also injects holes, so both carriers flood its drift layer. That
               lowers its voltage drop at high current, but the extra charge has to be cleared at every turn-off,
               which slows it down.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="reference" id="converters">
+      <div class="wrap">
+        <p class="eyebrow">Background</p>
+        <h2>Converters in brief</h2>
+        <p class="intro">
+          The grid delivers AC at a fixed voltage and frequency, but batteries, chips and LEDs need DC at other
+          voltages, and motors run best on AC at a frequency of their own. A converter changes one form into
+          another. There are four basic conversions, and real products chain them.
+        </p>
+
+        <h3 class="table-title">The four conversions</h3>
+        <div class="table-wrap">
+          <table class="conv-table">
+            <thead>
+              <tr>
+                <th scope="col"></th>
+                <th scope="col">To DC</th>
+                <th scope="col">To AC</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">From AC</th>
+                <td>
+                  <b>Rectifier.</b> Diodes let current through one way only, so the AC comes out as pulsing DC that a
+                  capacitor smooths. An <i>active</i> rectifier uses switches instead, so it can draw a clean
+                  sine-wave current from the grid (power factor correction, PFC).
+                  <span class="eg">In every charger and power supply, and at the front of every motor drive.</span>
+                </td>
+                <td>
+                  <b>AC-AC converter.</b> To change the frequency, usually a rectifier and an inverter back to back,
+                  with a DC link between them. To change only the voltage at a fixed frequency, a plain transformer
+                  is enough.
+                  <span class="eg">Motor drives, and the links that tie grids of different frequencies together.</span>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">From DC</th>
+                <td>
+                  <b>DC-DC converter.</b> Steps a DC voltage up or down by chopping it into pulses and smoothing
+                  them with an inductor and a capacitor. With a transformer in the middle, it also insulates the
+                  output from the input.
+                  <span class="eg">The second stage of a phone charger or an EV charger, the regulators next to a
+                    computer's processor, an EV's 12 V supply.</span>
+                </td>
+                <td>
+                  <b>Inverter.</b> Makes AC from DC at any voltage and frequency, by switching each output between
+                  DC+ and DC− with pulse widths that rise and fall like a sine wave (pulse-width modulation).
+                  <span class="eg">Motor drives, solar inverters, an electric car's traction inverter.</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="aside-pair">
+          <article class="aside">
+            <h3>Why switch?</h3>
+            <p>
+              An ideal switch is either fully on, with current through it but no voltage across it, or fully off,
+              with voltage across it but no current. Either way it turns no power into heat. A converter that only
+              switches, and smooths the pulses with inductors and capacitors, can therefore change voltage while
+              losing only a few percent. The alternative, a resistor or a transistor left half on, burns off the
+              unwanted voltage: dropping 325 V to 20 V that way would turn 94 % of the power into heat. Faster,
+              lower-loss switches like SiC and GaN allow higher switching frequencies, and so smaller inductors,
+              capacitors and transformers.
+            </p>
+          </article>
+          <article class="aside">
+            <h3>Why it matters</h3>
+            <p>
+              A large and growing share of all electricity passes through converters on its way from where it is
+              made to where it is used. Solar panels, batteries and many wind turbines feed the grid through
+              inverters; every device with a plug draws its power through a rectifier and a DC-DC converter;
+              electric cars, trains and most industrial motors run from inverters. A percent of loss saved in
+              them adds up to whole power plants. The <b>Application</b> view at the top of the page shows three of
+              them, taken apart.
             </p>
           </article>
         </div>
@@ -326,11 +428,108 @@
       </div>
     </section>
 
+    <section class="reference" id="field-guide">
+      <div class="wrap">
+        <p class="eyebrow">In the real world</p>
+        <h2>A field guide to power switches</h2>
+        <p class="intro">
+          Where these parts live, and how to recognize them. At the top of the page, <b>The package</b> takes a
+          device's package apart, and <b>Application</b> shows it at work in a product.
+        </p>
+
+        <h3 class="table-title">From the cell to the product</h3>
+        <ol class="scale-strip">
+          <li><b>Cell</b><span>5–25 µm</span><p>One transistor, the cell view. Too small to see.</p></li>
+          <li><b>Die</b><span>3–10 mm</span><p>Hundreds of thousands of cells in parallel on one piece of SiC, GaN or silicon.</p></li>
+          <li><b>Package</b><span>8–21 mm</span><p>One die on a copper lead frame, wired up and sealed: the part you can hold.</p></li>
+          <li><b>Module</b><span>5–20 cm</span><p>Several dies on a ceramic tile in one housing, for hundreds of amps.</p></li>
+          <li><b>Converter</b><span>a charger to a cabinet</span><p>Switches, gate drivers, capacitors, magnetics and a heatsink.</p></li>
+        </ol>
+
+        <h3 class="table-title">Where to find them</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Product</th>
+                <th scope="col">What switches the power</th>
+                <th scope="col">Package</th>
+                <th scope="col">What to look for</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">USB-C laptop or phone charger</th>
+                <td>A GaN HEMT, often with its gate driver in the same package</td>
+                <td>QFN or PQFN, 5 × 6 to 8 × 8 mm</td>
+                <td>A small flat black square on the board next to the transformer, with no heatsink</td>
+              </tr>
+              <tr>
+                <th scope="row">Desktop or server power supply</th>
+                <td>Silicon superjunction MOSFETs; GaN or SiC in the most efficient ones</td>
+                <td>TO-220, TO-247 or surface-mount</td>
+                <td>A row of three-legged parts screwed to an aluminum heatsink</td>
+              </tr>
+              <tr>
+                <th scope="row">Solar inverter, EV wall charger, on-board charger</th>
+                <td>SiC MOSFETs</td>
+                <td>TO-247-4, or small modules</td>
+                <td>Four-legged TO-247s lined up along a heatsink</td>
+              </tr>
+              <tr>
+                <th scope="row">Electric car, traction inverter</th>
+                <td>SiC MOSFETs or Si IGBTs, both common</td>
+                <td>Liquid-cooled power modules</td>
+                <td>Flat modules on a coolant plate, between the battery cables and the three motor cables</td>
+              </tr>
+              <tr>
+                <th scope="row">Induction cooktop, welder</th>
+                <td>Si IGBTs with a diode in the same package</td>
+                <td>TO-247</td>
+                <td>Two large three-legged parts on a heatsink under the coil</td>
+              </tr>
+              <tr>
+                <th scope="row">Motor drive, elevator, train, wind turbine</th>
+                <td>Si IGBTs</td>
+                <td>Modules like the 62 mm one, and much larger ones</td>
+                <td>Bolted-down plastic boxes with screw terminals and a gate-driver board on top</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="aside-pair">
+          <article class="aside">
+            <h3>Reading the label and the datasheet</h3>
+            <p>
+              The marking on a package is a part number. Its datasheet opens with the voltage rating
+              (V<sub>DS</sub> or V<sub>CE</sub>), the on-resistance R<sub>DS(on)</sub> or saturation voltage
+              V<sub>CE(sat)</sub>, a current rating and R<sub>th(j-c)</sub>. The headline current usually assumes the
+              case is held at 25 °C, which no real heatsink manages, so parts are used well below it. That is the Heat
+              view in practice: what a part can carry is set by how fast its package sheds heat. The last pages show
+              the package drawing and which leg is which.
+            </p>
+          </article>
+          <article class="aside caution">
+            <h3>Before you open anything</h3>
+            <p>
+              The safe way to hold one is to buy a single TO-247 SiC MOSFET or a GaN part from an electronics
+              distributor; they cost a few dollars. Chargers and power supplies hold large capacitors that can stay
+              charged to hundreds of volts long after they are unplugged and give a dangerous shock. Never open
+              anything that is plugged in, treat the capacitors as charged, and leave EV, solar and mains-wired
+              equipment to qualified people. Teardown photos and videos are the easy alternative.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
     <footer class="wrap footer">
       <p>
         Geometry is schematic and not to scale. Dimensions, doping and fields are typical textbook and datasheet
         values. The vertical-device fields use the standard one-dimensional abrupt-junction model; the GaN field
-        shape is illustrative.
+        shape is illustrative. Package temperatures come from a one-dimensional heat-flow model with 45° spreading
+        and room-temperature conductivities.
       </p>
     </footer>
 

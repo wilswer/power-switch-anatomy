@@ -59,6 +59,7 @@ export default {
       group: 0,
       shapes: [rect(-5, 0, 5, 1.6)],
       info: {
+        link: { scale: 'package', part: 'dieSi' },
         facts: [
           ['Material', 'Si(111) wafer, 150–200 mm'],
           ['Thickness', '≈ 1 mm as grown, thinned in packaging'],
@@ -227,6 +228,7 @@ export default {
       group: 8,
       shapes: [rect(-5, 4.7, -3.6, 5.6)],
       info: {
+        link: { scale: 'package', part: 'sourceMetal' },
         facts: [
           ['Material', 'Ti/Al-based ohmic metal, annealed'],
           ['Anneal', '≈ 850 °C'],
@@ -242,6 +244,7 @@ export default {
       group: 8,
       shapes: [rect(3.6, 4.7, 5, 5.6)],
       info: {
+        link: { scale: 'package', part: 'drainMetal' },
         facts: [
           ['Material', 'Same ohmic metal as the source'],
           ['Gate distance', '≈ 15 µm for 650 V'],

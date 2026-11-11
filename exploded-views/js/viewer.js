@@ -3,14 +3,61 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { KIND } from './palette.js';
 import { DEPTH, GAP } from './constants.js';
 
-// The 3D view of one device cell: builds an extruded slab per layer, explodes
-// layer groups apart, handles hover/click picking, and draws callout labels
-// with leader lines like an exploded assembly drawing.
+// The 3D view of one model: a device cell or a package. Builds the parts,
+// explodes their groups apart, handles hover/click picking, and draws callout
+// labels with leader lines like an exploded assembly drawing.
+//
+// A part is drawn from `shapes` (cell cross-sections: [x, y] polygons extruded
+// DEPTH into the screen) or from `solids` (packages: boxes, slabs and bond
+// wires in full 3D, see packages/solids.js).
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const VIEW_DIR = new THREE.Vector3(0.95, 0.62, 1.45).normalize();
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const lerp = (a, b, t) => a + (b - a) * t;
+
+// How each mode shows the model: `explode` is 'user' (follow the slider) or a
+// fixed value; `xray` makes parts see-through; `tintOnly` fades every part the
+// mode has not tinted (the Heat view colors only the layers heat flows through).
+const LOOKS = {
+  explore: { explode: 'user', xray: false },
+  default: { explode: 0, xray: true },
+};
+
+// Three.js geometries for one entry of a part's `solids`.
+function solidGeometry(s) {
+  if (s.type === 'box') {
+    const [x0, y0, z0] = s.min;
+    const [x1, y1, z1] = s.max;
+    const g = new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0);
+    g.translate((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+    return g;
+  }
+  if (s.type === 'slab') {
+    // Outline in the x–z plane (top view), extruded up from y0 to y1. The shape
+    // is drawn as (x, −z) and turned so its extrusion axis points up.
+    const toShape = (pts, S) => new S(pts.map(([x, z]) => new THREE.Vector2(x, -z)));
+    const shape = toShape(s.outline, THREE.Shape);
+    for (const h of s.holes ?? []) shape.holes.push(toShape(h, THREE.Path));
+    const g = new THREE.ExtrudeGeometry(shape, { depth: s.y1 - s.y0, bevelEnabled: false, curveSegments: 1 });
+    g.rotateX(-Math.PI / 2);
+    g.translate(0, s.y0, 0);
+    return g;
+  }
+  if (s.type === 'cyl') {
+    // A cylinder of radius r and length len centered on c, along the x, y or z axis.
+    const g = new THREE.CylinderGeometry(s.r, s.r, s.len, 28);
+    if (s.axis === 'x') g.rotateZ(Math.PI / 2);
+    if (s.axis === 'z') g.rotateX(Math.PI / 2);
+    g.translate(...s.c);
+    return g;
+  }
+  if (s.type === 'tube') {
+    const curve = new THREE.CatmullRomCurve3(s.pts.map((p) => new THREE.Vector3(...p)), false, 'centripetal');
+    return new THREE.TubeGeometry(curve, 36, s.r, 8, false);
+  }
+  throw new Error(`unknown solid type ${s.type}`);
+}
 
 function cssColor(name, fallback) {
   const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -110,7 +157,9 @@ export class Viewer {
     this.selected = null;
     this.hovered = null;
     this.hiddenParts = new Set();
+    this.tints = new Map();
     this.device = device;
+    this.gap = device.gap ?? GAP;
 
     for (const def of device.parts) {
       const kind = KIND[def.kind];
@@ -135,21 +184,37 @@ export class Viewer {
       const depth = DEPTH + (def.depthPad ?? 0);
       const meshes = [];
       const edges = [];
-      for (const poly of def.shapes) {
+      const geoms = (def.shapes ?? []).map((poly) => {
         const shape = new THREE.Shape(poly.map(([x, y]) => new THREE.Vector2(x, y)));
         const geom = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 1 });
         geom.translate(0, 0, -depth / 2);
+        return { geom, edges: true };
+      });
+      for (const s of def.solids ?? []) geoms.push({ geom: solidGeometry(s), edges: s.type !== 'tube' });
+      const bounds = new THREE.Box3();
+      for (const { geom, edges: withEdges } of geoms) {
         geom.computeBoundingBox();
+        bounds.union(geom.boundingBox);
         const mesh = new THREE.Mesh(geom, material);
         mesh.userData.partId = def.pickAs ?? def.id;
-        const line = new THREE.LineSegments(new THREE.EdgesGeometry(geom, 30), edgeMat);
-        group.add(mesh, line);
+        group.add(mesh);
         meshes.push(mesh);
+        // Bond wires get no outline: a tube's facets would draw as stripes.
+        const line = withEdges ? new THREE.LineSegments(new THREE.EdgesGeometry(geom, 30), edgeMat) : null;
+        if (line) group.add(line);
         edges.push(line);
       }
 
-      const last = meshes.at(-1).geometry.boundingBox;
-      const [ax, ay] = def.anchor ?? [(last.min.x + last.max.x) / 2, (last.min.y + last.max.y) / 2];
+      // Leaders point at `anchor`: [x, y] on the cross-section face for cells,
+      // [x, y, z] for packages. By default, the center of the part.
+      let anchor;
+      if (def.anchor?.length === 3) anchor = new THREE.Vector3(...def.anchor);
+      else if (def.solids) anchor = bounds.getCenter(new THREE.Vector3());
+      else {
+        const last = meshes.at(-1).geometry.boundingBox;
+        const [ax, ay] = def.anchor ?? [(last.min.x + last.max.x) / 2, (last.min.y + last.max.y) / 2];
+        anchor = new THREE.Vector2(ax, ay);
+      }
 
       let labelEl = null;
       if (def.label && !def.pickAs) {
@@ -176,10 +241,14 @@ export class Viewer {
         material,
         edgeMat,
         baseOpacity,
-        anchor: new THREE.Vector2(ax, ay),
+        anchor,
         labelEl,
         lw: 0,
         lh: 0,
+        // Parts that turn (a motor shaft, a fan) rotate about def.spin.pivot.
+        spin: def.spin
+          ? { pivot: new THREE.Vector3(...def.spin.pivot), axis: new THREE.Vector3(...def.spin.axis).normalize(), angle: 0 }
+          : null,
       });
     }
 
@@ -191,9 +260,15 @@ export class Viewer {
 
   // ---------- public controls ----------
 
+  // The look of the current mode (see LOOKS); a model can override it per mode.
+  look(mode = this.mode) {
+    return this.device?.modeLook?.[mode] ?? LOOKS[mode] ?? LOOKS.default;
+  }
+
   setMode(mode) {
     this.mode = mode;
-    this.explodeTarget = mode === 'explore' ? this.userExplode : 0;
+    const { explode } = this.look();
+    this.explodeTarget = explode === 'user' ? this.userExplode : explode;
     if (reduceMotion) this.explode = this.explodeTarget;
     this._updateGuides();
     this.applyLook();
@@ -201,8 +276,14 @@ export class Viewer {
 
   setExplode(value) {
     this.userExplode = value;
-    if (this.mode === 'explore') this.explodeTarget = value;
+    if (this.look().explode === 'user') this.explodeTarget = value;
     if (reduceMotion) this.explode = this.explodeTarget;
+  }
+
+  // Override part colors, e.g. by temperature: a Map of part id → THREE.Color.
+  setTints(tints) {
+    this.tints = tints ?? new Map();
+    this.applyLook();
   }
 
   select(id) {
@@ -260,7 +341,7 @@ export class Viewer {
 
   // Opacity, highlight and visibility for every part, from the current state.
   applyLook() {
-    const xray = this.mode !== 'explore';
+    const { xray, tintOnly } = this.look();
     for (const p of this.parts.values()) {
       const { def } = p;
       const visible = (!def.onlyIn || def.onlyIn.includes(this.mode)) && !this.hiddenParts.has(def.id);
@@ -271,11 +352,14 @@ export class Viewer {
       const isSel = this.selected === id;
       const isHov = this.hovered === id;
 
+      const tint = this.tints.get(def.id);
       let op = p.baseOpacity;
       if (xray && !def.solidInXray) op = Math.min(op, (p.kind.metalness ?? 0) > 0.3 ? 0.14 : 0.26);
-      if (this.selected && !isSel) op = Math.min(op, xray ? 0.1 : 0.16);
+      if (tintOnly && !tint) op = Math.min(op, 0.12);
+      if (this.selected && !isSel) op = Math.min(op, xray || tintOnly ? 0.1 : 0.16);
 
       const m = p.material;
+      m.color.set(tint ?? p.kind.color);
       const transparent = op < 0.999;
       if (m.transparent !== transparent) {
         m.transparent = transparent;
@@ -291,7 +375,7 @@ export class Viewer {
         m.emissiveIntensity = p.kind.emissiveIntensity ?? 0;
       }
       p.edgeMat.color.copy(isSel || isHov ? this.edgeStrong : this.edgeColor);
-      p.edgeMat.opacity = isSel || isHov ? 0.95 : transparent ? 0.28 : 0.55;
+      p.edgeMat.opacity = isSel || isHov ? 0.95 : transparent ? (op < 0.13 ? 0.14 : 0.28) : 0.55;
 
       p.labelEl?.classList.toggle('is-selected', isSel);
       p.labelEl?.classList.toggle('is-hover', isHov && !isSel);
@@ -316,8 +400,8 @@ export class Viewer {
         const bb = m.geometry.boundingBox;
         b0.union(bb);
         const lifted = bb.clone();
-        lifted.min.y += p.def.group * GAP;
-        lifted.max.y += p.def.group * GAP;
+        lifted.min.y += p.def.group * this.gap;
+        lifted.max.y += p.def.group * this.gap;
         b1.union(lifted);
       }
     }
@@ -429,7 +513,7 @@ export class Viewer {
     pos.needsUpdate = true;
     this.guides.computeLineDistances();
     this.guideMat.opacity = 0.5 * this.explode;
-    this.guides.visible = this.mode === 'explore' && this.explode > 0.02;
+    this.guides.visible = this.look().explode === 'user' && this.explode > 0.02;
   }
 
   _frame() {
@@ -450,7 +534,14 @@ export class Viewer {
       this.camera.position.copy(this.controls.target).add(off);
       this._updateGuides();
     }
-    for (const p of this.parts.values()) p.group.position.y = p.def.group * GAP * this.explode;
+    for (const p of this.parts.values()) {
+      p.group.position.set(0, p.def.group * this.gap * this.explode, 0);
+      if (p.spin) {
+        // Rotate about the pivot: position = pivot − R·pivot, plus the explode lift.
+        p.group.quaternion.setFromAxisAngle(p.spin.axis, p.spin.angle);
+        p.group.position.add(p.spin.pivot).sub(this._v.copy(p.spin.pivot).applyQuaternion(p.group.quaternion));
+      }
+    }
     if (this._fly) {
       const f = this._fly;
       f.t = f.seconds > 0 ? Math.min(1, f.t + dt / f.seconds) : 1;
@@ -503,7 +594,9 @@ export class Viewer {
         p.lw = p.labelEl.offsetWidth;
         p.lh = p.labelEl.offsetHeight;
       }
-      const v = this._v.set(p.anchor.x, p.anchor.y + p.group.position.y, zFace).project(this.camera);
+      const z = p.anchor.isVector3 ? p.anchor.z : zFace;
+      const lift = p.def.group * this.gap * this.explode; // not group.position: a spinning part's moves
+      const v = this._v.set(p.anchor.x, p.anchor.y + lift, z).project(this.camera);
       if (v.z > 1) {
         p.labelEl.style.visibility = 'hidden';
         continue;

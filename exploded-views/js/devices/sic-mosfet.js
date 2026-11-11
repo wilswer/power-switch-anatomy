@@ -44,6 +44,7 @@ export default {
       group: 0,
       shapes: [rect(-5, -0.35, 5, 0)],
       info: {
+        link: { scale: 'package', part: 'solder' },
         facts: [
           ['Material', 'Nickel silicide, then Ti/Ni/Ag or Au'],
           ['Thickness', '≈ 1–2 µm'],
@@ -59,6 +60,7 @@ export default {
       group: 1,
       shapes: [rect(-5, 0, 5, 1.7)],
       info: {
+        link: { scale: 'package', part: 'die' },
         facts: [
           ['Material', '4H-SiC wafer (150 or 200 mm), nitrogen-doped'],
           ['Thickness', '≈ 100–350 µm after thinning'],
@@ -240,6 +242,7 @@ export default {
       shapes: [c.metal],
       anchor: [4, T + 1.0],
       info: {
+        link: { scale: 'package', part: 'sourcePad' },
         facts: [
           ['Material', 'Aluminum, on a nickel-silicide contact'],
           ['Thickness', '≈ 4 µm'],

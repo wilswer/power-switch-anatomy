@@ -5,8 +5,10 @@
 //
 // `view` is the camera direction from the model's center, `zoom` the distance
 // relative to the default framing (smaller is closer). `sweep` animates the
-// blocking voltage. device, mode and explode carry over from the previous step
-// when left out; nothing else does.
+// blocking voltage ('V', the default) or the power loss in a package ('P').
+// device, mode and explode carry over from the previous step when left out,
+// and so does `scale` ('cell', 'package' or 'app') unless the step names a device:
+// then it is 'cell' unless the step says otherwise. Nothing else carries over.
 
 const VIEW = {
   standard: [0.95, 0.62, 1.45],
@@ -20,6 +22,9 @@ export const CHAPTERS = {
   sic: 'SiC MOSFET',
   igbt: 'Si IGBT',
   gan: 'GaN HEMT',
+  pkg: 'Packages',
+  conv: 'Converters',
+  apps: 'At work',
   end: 'Wrap-up',
 };
 
@@ -165,6 +170,135 @@ const STEPS = [
   },
 
   {
+    chapter: 'pkg',
+    device: 'sic',
+    scale: 'package',
+    mode: 'explore',
+    explode: 1,
+    focus: 'cells',
+    view: VIEW.high,
+    zoom: 0.75,
+    title: 'From one cell to a chip',
+    body: `Zoom out from the SiC cell a thousandfold. Hundreds of thousands of copies of it fill the striped active area of this 3.6 × 4 mm die, all under one aluminum source pad, so they all conduct in parallel. The ring around them is the edge termination.`,
+  },
+  {
+    focus: 'kelvinLead',
+    view: VIEW.standard,
+    zoom: 0.9,
+    title: 'The part you can hold',
+    body: `The die is soldered to a thick copper tab, which is the drain, wired to the legs and sealed in black epoxy: a TO-247-4. Leg 3 is the Kelvin source, a second source connection that only the gate driver uses.`,
+  },
+  {
+    mode: 'current',
+    view: VIEW.standard,
+    zoom: 0.85,
+    title: 'Two current loops',
+    body: `The load current comes in through leg 1 and the tab, rises through the die and leaves over the thick wires to leg 2. The gate driver's loop returns through the Kelvin wire instead, so the voltage the fast-changing load current makes across the source wires cannot disturb the gate.`,
+  },
+  {
+    mode: 'heat',
+    explode: 0.6,
+    heat: { P: 0 },
+    sweep: { what: 'P', from: 0, to: 80, seconds: 5, step: 1 },
+    view: VIEW.low,
+    zoom: 0.9,
+    title: 'Where the heat goes',
+    body: `Now the die turns up to 80 W into heat. It flows down through the solder and the tab into the heatsink. The thin insulating pad under the tab, needed because the tab is live, costs more temperature than the whole package.`,
+  },
+  {
+    device: 'gan',
+    scale: 'package',
+    mode: 'heat',
+    explode: 0.8,
+    heat: { P: 4 },
+    view: VIEW.standard,
+    zoom: 0.95,
+    title: 'No legs: the board is the heatsink',
+    body: `With all its terminals on top, the GaN die fits a flat 8 × 8 mm package soldered straight onto the board, which keeps its current loop tiny. Its heat goes through the pad into the board, and the board and the gap pad under it cost nearly all the temperature rise.`,
+  },
+  {
+    device: 'igbt',
+    scale: 'package',
+    mode: 'explore',
+    explode: 1,
+    focus: 'ceramic',
+    view: VIEW.standard,
+    zoom: 0.9,
+    title: 'A module: dies on a ceramic tile',
+    body: `At hundreds of amps, dies go into modules. These IGBT and diode dies are soldered onto copper on a ceramic tile, which insulates the circuit from the baseplate. That tile is the biggest temperature step in the module.`,
+  },
+  {
+    mode: 'current',
+    phase: 'high',
+    view: VIEW.high,
+    zoom: 0.85,
+    title: 'One leg of an inverter',
+    body: `T1 connects DC+ to the motor. When it turns off, the motor keeps the current flowing, now in through DC− and diode D2; the panel switches between the two. Three such half-bridges, switching thousands of times a second, drive a motor.`,
+  },
+
+  {
+    chapter: 'conv',
+    device: 'gan',
+    scale: 'app',
+    mode: 'explore',
+    explode: 1,
+    view: VIEW.standard,
+    zoom: 1,
+    title: 'Why convert electricity?',
+    body: `The grid delivers AC: 230 V that reverses 50 times a second. Phones, batteries and chips need DC at other voltages, and motors run best on AC at a frequency of their own. A converter, like this phone charger, changes one form into another by switching fast, losing only a few percent instead of burning the difference off as heat.`,
+  },
+  {
+    device: 'igbt',
+    scale: 'app',
+    mode: 'explore',
+    explode: 1,
+    view: VIEW.standard,
+    zoom: 1,
+    title: 'Rectifiers, inverters, DC-DC converters',
+    body: `A rectifier turns AC into DC. An inverter turns DC into AC at any voltage and frequency. A DC-DC converter steps a DC voltage up or down. Products chain them: this motor drive is a rectifier and then an inverter, as the panel shows. <a href="#converters">Converters in brief</a> below compares all four.`,
+  },
+
+  {
+    chapter: 'apps',
+    device: 'igbt',
+    scale: 'app',
+    mode: 'explore',
+    explode: 1,
+    focus: 'modules',
+    view: VIEW.standard,
+    zoom: 0.95,
+    title: 'In a motor drive',
+    body: `Three of those modules, one per motor wire, sit on a finned heatsink in this 30 kW motor drive, under a busbar, a bank of capacitors and a gate-driver board. Drives like this run pumps, fans and conveyors at just the speed they need.`,
+  },
+  {
+    mode: 'action',
+    view: VIEW.standard,
+    zoom: 0.9,
+    title: 'Pulses become a sine wave',
+    body: `Switched on, power flows from the grid through the rectifier and capacitors into the modules and out to the motor. Each module only ever connects its wire to 0 or 560 V, but with pulse widths that rise and fall; the panel shows how their average becomes the motor's smooth sine-wave current.`,
+  },
+  {
+    device: 'sic',
+    scale: 'app',
+    mode: 'action',
+    explode: 0,
+    view: VIEW.standard,
+    zoom: 0.9,
+    title: 'In an electric car’s charger',
+    body: `This 11 kW on-board charger uses eight TO-247-4 SiC MOSFETs on a liquid-cooled floor. The first four draw a sine-wave current from each grid phase; the other four drive a small, fast transformer that charges the battery through the orange high-voltage cable.`,
+  },
+  {
+    device: 'gan',
+    scale: 'app',
+    mode: 'action',
+    explode: 0,
+    view: VIEW.standard,
+    zoom: 0.9,
+    title: 'In a phone charger',
+    body: `And the GaN part at home: a 65 W USB-C charger. The switch chops about 325 V at 150 kHz into a transformer the size of a sugar cube. That speed is what lets the whole charger be so small.`,
+  },
+
+  {
     chapter: 'end',
     device: 'sic',
     mode: 'explore',
@@ -172,7 +306,7 @@ const STEPS = [
     view: VIEW.standard,
     zoom: 1,
     title: 'Which switch where',
-    body: `IGBTs are rugged and cheap at high voltage but slow: motor drives, trains, wind turbines. SiC MOSFETs are fast and efficient from 650 V to 3.3 kV: EV inverters and chargers. GaN HEMTs are the fastest, up to 650 V: phone chargers and server power. <a href="#compare">The tables below</a> compare them side by side.`,
+    body: `IGBTs are rugged and cheap at high voltage but slow: motor drives, trains, wind turbines. SiC MOSFETs are fast and efficient from 650 V to 3.3 kV: EV inverters and chargers. GaN HEMTs are the fastest, up to 650 V: phone chargers and server power. <a href="#compare">The tables below</a> compare them, and <a href="#field-guide">the field guide</a> shows where to spot them.`,
   },
 ];
 
@@ -182,13 +316,16 @@ export const TOUR = STEPS.reduce((out, step) => {
   out.push({
     chapter: step.chapter ?? prev.chapter,
     device: step.device ?? prev.device,
+    scale: step.scale ?? (step.device ? 'cell' : prev.scale) ?? 'cell',
     mode: step.mode ?? prev.mode,
     explode: step.explode ?? prev.explode ?? 1,
     focus: step.focus ?? null,
     view: step.view ?? VIEW.standard,
     zoom: step.zoom ?? 1,
     block: step.block ?? null,
-    sweep: step.sweep ?? null,
+    heat: step.heat ?? null,
+    phase: step.phase ?? null,
+    sweep: step.sweep ? { what: 'V', ...step.sweep } : null,
     title: step.title,
     body: step.body,
   });
