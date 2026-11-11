@@ -135,3 +135,7 @@ when the user interrupts it, keyboard, focus and reduced motion, and the package
 scale switching, links, the heat slider and chart, the module's switching states, and
 layouts with no sideways scrolling, and the products: power flow, flashing switches, the
 turning motor, the waveform chart, and a tour card that keeps its size on every step.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
