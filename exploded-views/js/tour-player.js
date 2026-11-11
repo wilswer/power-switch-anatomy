@@ -1,5 +1,6 @@
 import { TOUR, CHAPTERS } from './tour.js';
 import { reducedMotion } from './motion.js';
+import { markTerms } from './terms.js';
 
 // Plays the guided tour: shows the step card, steps back and forth, and runs
 // sweeps (of the blocking voltage or the power loss). Setting up each scene is
@@ -75,6 +76,7 @@ export function createTourPlayer({ els, applyStep, setLevel, onStart, onStop, on
     els.kicker.textContent = kickerOf(index);
     els.title.textContent = st.title;
     els.text.innerHTML = st.body;
+    markTerms(els.text);
     // A button that disables itself hands its focus to Next.
     const hadFocus = document.activeElement;
     els.back.disabled = index === 0;

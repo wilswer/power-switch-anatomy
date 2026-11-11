@@ -147,7 +147,17 @@ test('the tour ends with failure modes and then the outlook, back at the first c
   const chapters = [...new Set(TOUR.map((s) => s.chapter))];
   assert.deepEqual(chapters.slice(-2), ['fail', 'outlook']);
   const last = TOUR.at(-1);
-  assert.deepEqual([last.device, last.scale, last.mode], [TOUR[0].device, TOUR[0].scale, TOUR[0].mode]);
+  const firstCell = TOUR.find((s) => s.scale === 'cell');
+  assert.deepEqual([last.device, last.scale, last.mode], [firstCell.device, firstCell.scale, firstCell.mode]);
+});
+
+test('the tour opens with why switches matter and their three terminals, before any cell', () => {
+  const basics = TOUR.filter((s) => s.chapter === 'basics');
+  assert.equal(TOUR[0].chapter, 'basics');
+  assert.ok(TOUR.findIndex((s) => s.chapter !== 'basics') === basics.length, 'the basics come first, together');
+  assert.ok(basics.every((s) => s.scale !== 'cell'), 'from the product and package, before the physics');
+  const text = basics.map((s) => s.body).join(' ');
+  for (const word of ['gate', 'drain', 'source', 'collector', 'emitter']) assert.match(text, new RegExp(`\\b${word}\\b`));
 });
 
 test('the failure-modes chapter highlights parts that can fail', () => {

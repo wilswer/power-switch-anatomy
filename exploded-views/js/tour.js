@@ -19,6 +19,7 @@ const VIEW = {
 };
 
 export const CHAPTERS = {
+  basics: 'The basics',
   sic: 'SiC MOSFET',
   igbt: 'Si IGBT',
   gan: 'GaN HEMT',
@@ -32,6 +33,27 @@ export const CHAPTERS = {
 
 const STEPS = [
   {
+    chapter: 'basics',
+    device: 'gan',
+    scale: 'app',
+    mode: 'explore',
+    explode: 1,
+    view: VIEW.standard,
+    zoom: 1,
+    title: 'Why power electronics?',
+    body: `Much of the electricity you use passes through a power converter on the way: a phone charger like this one, a car’s charger, a motor drive, a solar inverter. Each changes voltage or frequency by switching transistors fully on and fully off, thousands to millions of times a second. This tour takes those switches apart.`,
+  },
+  {
+    device: 'sic',
+    scale: 'package',
+    mode: 'explore',
+    explode: 1,
+    view: VIEW.standard,
+    zoom: 0.95,
+    title: 'A switch with three terminals',
+    body: `A power transistor is a switch with three terminals. A few volts on the gate turn it on or off. When it is on, the load current flows in at the drain and out at the source with only a small voltage drop; when it is off, the drain holds off hundreds of volts. An IGBT works the same way but calls them collector and emitter.`,
+  },
+  {
     chapter: 'sic',
     device: 'sic',
     mode: 'explore',
@@ -39,7 +61,7 @@ const STEPS = [
     view: VIEW.standard,
     zoom: 1,
     title: 'One cell of a power switch',
-    body: `This is one cell of a 1200 V silicon carbide MOSFET, pulled apart layer by layer. A real chip repeats it hundreds of thousands of times side by side. We will build it up from the bottom, then switch it on and off.`,
+    body: `Inside that package is a chip of silicon carbide. This is one cell of it, a 1200 V MOSFET, pulled apart layer by layer; the chip repeats it hundreds of thousands of times side by side. We will build it up from the bottom, then switch it on and off.`,
   },
   {
     focus: 'substrate',

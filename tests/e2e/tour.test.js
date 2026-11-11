@@ -5,10 +5,13 @@ import assert from 'node:assert/strict';
 import { open, wait } from './harness.js';
 import { TOUR } from '../../exploded-views/js/tour.js';
 
+// The SiC voltage sweep, 0 → 1200 V, found by what it does rather than its number.
+const SIC_SWEEP = TOUR.findIndex((s) => s.sweep?.what === 'V' && s.device === 'sic') + 1;
+
 test('a voltage sweep never drives another device', async () => {
   const t = await open();
   await t.page.click('.cta');
-  await t.goTo(8); // SiC sweep, 0 → 1200 V
+  await t.goTo(SIC_SWEEP);
   await wait(600);
   await t.page.click('[data-device="gan"]');
   await wait(1500);
@@ -20,7 +23,7 @@ test('a voltage sweep never drives another device', async () => {
 test('leaving Blocking mode stops a running sweep', async () => {
   const t = await open();
   await t.page.click('.cta');
-  await t.goTo(8);
+  await t.goTo(SIC_SWEEP);
   await wait(800);
   await t.page.click('[data-mode="explore"]');
   const before = (await t.state()).block.sic.V;
@@ -32,7 +35,7 @@ test('leaving Blocking mode stops a running sweep', async () => {
 test('Replay restarts the whole step, not just the sweep', async () => {
   const t = await open();
   await t.page.click('.cta');
-  await t.goTo(8);
+  await t.goTo(SIC_SWEEP);
   await t.page.click('[data-device="gan"]');
   await t.page.click('#tour-replay');
   await wait(300);
@@ -132,7 +135,7 @@ test('switching the field plate off removes it from the model', async () => {
 test('with reduced motion the sweep still steps up in visible stages', async () => {
   const t = await open({ reducedMotion: 'reduce' });
   await t.page.click('.cta');
-  await t.goTo(8);
+  await t.goTo(SIC_SWEEP);
   const seen = new Set();
   for (let i = 0; i < 28; i++) {
     seen.add((await t.state()).block.sic.V);
@@ -169,12 +172,12 @@ test('stepping with the keyboard while dragging the camera does not fight the dr
 test('Blocking steps show the live numbers in the tour card itself', async () => {
   const t = await open({ viewport: { width: 400, height: 860 } });
   await t.page.click('.cta');
-  await t.goTo(8);
+  await t.goTo(SIC_SWEEP);
   await t.page.waitForFunction(() => window.__pageDebug.state.block.sic.V === 1200, null, { timeout: 10000 });
   const text = await t.page.textContent('#tour-readout');
   assert.match(text, /1200 V/);
   assert.match(text, /76 %/);
-  await t.goTo(9);
+  await t.goTo(SIC_SWEEP + 1);
   assert.equal(await t.page.isHidden('#tour-readout'), true);
   await t.close();
 });
@@ -255,8 +258,8 @@ test('arrow keys and Escape leave the tour alone while its card is out of sight'
 test('opening another view by its link ends the tour', async () => {
   const t = await open();
   await t.page.click('.cta');
-  await t.page.evaluate(() => (location.hash = '#gan/app'));
-  await t.page.waitForFunction(() => window.__pageDebug.state.device === 'gan');
+  await t.page.evaluate(() => (location.hash = '#igbt/package'));
+  await t.page.waitForFunction(() => window.__pageDebug.state.device === 'igbt');
   assert.equal(await t.active(), false);
   assert.equal(await t.page.isHidden('#tour-card'), true);
   await t.close();

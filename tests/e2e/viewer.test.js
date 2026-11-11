@@ -31,7 +31,8 @@ test('on a 720p laptop the tour never pushes labels out of the view, and keeps t
   const t = await open({ viewport: { width: 1280, height: 720 } });
   await t.page.click('.cta');
   await wait(1000); // the page scrolls to show the card
-  for (const n of [1, 19, 21, 24, 25, 28, 34]) {
+  // The two Basics steps, then the crowded scenes of the package and product chapters.
+  for (const n of [1, 2, 3, 21, 23, 26, 27, 30, 36]) {
     await t.goTo(n);
     await wait(1800); // let the camera arrive
     const vp = await t.page.$eval('#viewport', (el) => el.getBoundingClientRect().toJSON());

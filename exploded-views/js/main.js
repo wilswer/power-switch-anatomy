@@ -22,6 +22,7 @@ import { FAILURES, FAILURE_GROUPS } from './failures.js';
 import { reducedMotion as reduceMotion } from './motion.js';
 import { agedHeat, powerCyclingTest, CAUSES, EOL } from './aging.js';
 import { renderCyclePlot, bindCycleTooltip, fmtCycles } from './cycleplot.js';
+import { markTerms, renderGlossary, bindTerms } from './terms.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 
@@ -348,6 +349,11 @@ function renderAll() {
 }
 
 function renderModeCard() {
+  renderModeCardContent();
+  markTerms(els.modeCard);
+}
+
+function renderModeCardContent() {
   if (state.scale === 'app') {
     if (state.mode === 'action') renderActionCard();
     else renderAppCard();
@@ -473,6 +479,7 @@ function renderCurrentCard() {
       state.phase[state.device] = b.dataset.phase;
       pkgEffects?.setPhase(b.dataset.phase);
       renderCurrentCard();
+      markTerms(els.modeCard);
     });
   }
 }
@@ -794,6 +801,7 @@ function renderPartCard() {
     ${p.info.look ? `<h4>Look for it</h4><p>${p.info.look}</p>` : ''}
     ${renderPartFailures(p.id)}
     ${link ? `<p><button type="button" class="ghost jump" data-jump>${linkLabel} →</button></p>` : ''}`;
+  markTerms(els.partCard);
   $('.close', els.partCard).addEventListener('click', () => select(null));
   $('[data-jump]', els.partCard)?.addEventListener('click', () => {
     setScale(link.scale);
@@ -934,6 +942,7 @@ function renderFailures() {
         .join('')}</div>
     </section>`,
   ).join('');
+  for (const card of list.querySelectorAll('.fm-card')) markTerms(card);
 }
 
 function filterFailures(device) {
@@ -1069,6 +1078,8 @@ function boot() {
     onChange: updateTourButtons,
   });
   renderFailures();
+  renderGlossary($('#glossary-list'));
+  bindTerms();
   wireUI();
   const fromHash = parseHash();
   if (DEVICES[fromHash.id]) {

@@ -16,13 +16,18 @@ Cell modes:
 - **Blocking**: a voltage slider, the depletion region and the electric-field profile, from a
   1D abrupt-junction model for the vertical devices and an illustrative shape for GaN.
 
-A **guided tour** (masthead button or Tour in the toolbar) walks through all three devices in
-46 steps, with chapters on their packages, on what converters do, on the products they work
+A **guided tour** (masthead button or Tour in the toolbar) opens with the basics (why power
+electronics switches at all, and the three terminals of a power transistor), then walks
+through all three devices in 48 steps, with chapters on their packages, on what converters do, on the products they work
 in, on how they fail (highlighting the parts that wear out), and an outlook on where power
 electronics is heading and its open questions: it sets the
 device, scale, mode and camera,
 highlights the part being discussed and sweeps the blocking voltage or the power loss. Arrow
 keys step, Esc exits, and leaving midway lets you resume.
+
+**Glossary terms** are underlined with dots wherever they appear in the tour, the panels and
+the failure cards: hover, tap or focus one to see its definition. The Glossary section lists
+them all.
 
 **The package** (the Zoom switch under the device tabs) shows what each cell ends up in, as
 an exploded 3D drawing of a real part with click-to-learn parts and a "look for it" note on
@@ -107,6 +112,8 @@ its own fonts.
 | `exploded-views/js/apps/` | The three products: 3D solids, power-flow paths, waveforms and their text |
 | `exploded-views/js/physics.js` | Field models for Blocking mode (pure functions) |
 | `exploded-views/js/thermal.js` | Heat-flow model for the package Heat mode (pure functions) |
+| `exploded-views/js/glossary.js` | The glossary terms, their definitions and the matcher that finds them in text (pure) |
+| `exploded-views/js/terms.js` | Marks glossary terms in rendered text and shows their definitions |
 | `exploded-views/js/aging.js` | Wear (cracked die attach, lifted wires) and the simulated power-cycling test (pure functions) |
 | `exploded-views/js/cycleplot.js` | The power-cycling chart in Age it |
 | `exploded-views/js/viewer.js` | three.js scene, exploding, picking, callout labels |
@@ -143,7 +150,9 @@ the same geometry rules, and that the numbers their texts quote (power, voltages
 averaging to a sine wave) match their waveforms. The aging tests check that wear raises the
 right signal, that the end-of-life lines fall at plausible crack areas and wire counts, and
 that a simulated test replays from its seed, scatters between devices and follows the
-fifth-power law of the swing. The failure-mode tests check that every
+fifth-power law of the swing. The glossary tests check that every term is used on the page, that terms match whole words,
+longest first, and that other senses of a word (a screw hole, threshold drift, a coolant
+channel) are left alone. The failure-mode tests check that every
 card is complete and that every part it points at exists. The tour tests check that
 every step points at a real device, scale, mode and visible part, and that the numbers the
 tour and package texts quote match the models. The browser tests cover how the tour behaves

@@ -2,6 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { open, wait } from './harness.js';
+import { TOUR } from '../../exploded-views/js/tour.js';
 
 const modeLabels = (page) => page.$$eval('[data-mode]', (bs) => bs.map((b) => b.textContent.trim()));
 const setRange = (page, sel, value) =>
@@ -112,7 +113,7 @@ test('the heat chart explains each column on hover', async () => {
 test('a tour power sweep never drives another package', async () => {
   const t = await open();
   await t.page.click('.cta');
-  await t.goTo(21); // TO-247 heat sweep, 0 → 80 W
+  await t.goTo(TOUR.findIndex((s) => s.sweep?.what === 'P' && s.device === 'sic') + 1); // TO-247 heat sweep
   await wait(800);
   await t.page.click('[data-device="gan"]');
   await wait(1500);
@@ -123,13 +124,12 @@ test('a tour power sweep never drives another package', async () => {
   await t.close();
 });
 
-test('the tour starts at the cell even from a package view', async () => {
+test('the tour starts at its first scene even from a package view', async () => {
   const t = await open({ hash: 'igbt/package' });
   await t.page.click('.cta');
   const s = await t.state();
-  assert.equal(s.device, 'sic');
-  assert.equal(s.scale, 'cell');
-  await t.goTo(22); // GaN package, Heat
+  assert.deepEqual([s.device, s.scale, s.mode], [TOUR[0].device, TOUR[0].scale, TOUR[0].mode]);
+  await t.goTo(TOUR.findIndex((s) => s.device === 'gan' && s.scale === 'package' && s.mode === 'heat') + 1);
   const g = await t.state();
   assert.deepEqual([g.device, g.scale, g.mode], ['gan', 'package', 'heat']);
   await t.close();
