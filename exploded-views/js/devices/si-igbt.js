@@ -38,7 +38,7 @@ export default {
   ],
   stats: [
     ['Voltage classes', '600 V – 6.5 kV'],
-    ['On-state drop', 'V<sub>CE(sat)</sub> ≈ 1.5–2 V at rated current'],
+    ['On-state drop', 'V<sub>CE(sat)</sub> ≈ 1.5–2 V at rated current up to 1.7 kV, ≈ 2.5–4 V for 3.3–6.5 kV parts'],
     ['Gate drive', '+15 V on, 0 to −15 V off'],
     ['Switching', '≈ 2–20 kHz'],
     ['Used in', 'Motor drives, trains, wind turbines, many EV inverters'],
@@ -317,7 +317,7 @@ export default {
     text: [
       `The gate is held at 0 V or below, so there is no channel and nothing is injected. The p-body/drift junction is reverse-biased and its depletion region spreads down into the drift.`,
       `Silicon avalanches at a much lower field than SiC (about 0.2 MV/cm at this very light doping), so the same 1200 V needs a drift about ten times thicker: compare the depth axis with the SiC MOSFET. Above about 600 V the depletion reaches the field stop, which ends the field before it can touch the p<sup>+</sup> collector.`,
-      `That thick drift is why a silicon MOSFET at 1200 V would be hopelessly resistive, and why the IGBT's plasma trick is needed.`,
+      `That thick drift is why a silicon MOSFET at 1200 V would be hopelessly resistive, and why the IGBT's plasma trick is needed. As for SiC, the ideal breakdown in the readout is for a flat, endless junction; real dies break down somewhat lower, at their edges.`,
     ],
   },
 };

@@ -174,3 +174,20 @@ export function blockingResult(blocking, settings) {
   }
   return lateralBlocking({ V: settings.V, fieldPlate: settings.fieldPlate, ...blocking.params });
 }
+
+// The status line for a blocking result. Silicon and SiC devices avalanche
+// when the peak field reaches the critical field; a GaN HEMT has no avalanche
+// mechanism (its device config sets `avalanche: false`), so it simply breaks.
+export function blockingStatus(blocking, r) {
+  const ratio = r.Ec > 0 ? r.Epk / r.Ec : 0;
+  const pct = `${Math.round(ratio * 100)} % of critical`;
+  const level = ratio >= 1 ? 'danger' : ratio > 0.8 ? 'warn' : 'ok';
+  if (ratio < 1) return { level, text: `Blocking · peak field at ${pct}`, short: pct };
+  return blocking.avalanche === false
+    ? {
+        level,
+        text: 'Breakdown: the peak field has reached the critical field. A GaN HEMT cannot avalanche, so this destroys it',
+        short: 'destructive breakdown',
+      }
+    : { level, text: 'Avalanche breakdown: the peak field has reached the critical field', short: 'avalanche breakdown' };
+}

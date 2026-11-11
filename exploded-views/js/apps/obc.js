@@ -3,25 +3,29 @@ import { transformer, tri } from './shared.js';
 
 // The SiC MOSFET at work: an 11 kW on-board charger, the box in an electric
 // car that charges the battery from an AC charge point. Model units: 1 unit =
-// 25 mm (the box is 350 × 250 × 90 mm). Eight TO-247-4 parts lie flat on the
-// liquid-cooled floor, legs bent up into the power board above. Groups run
-// from 0 (cold plate) to 10 (cover, lifted well clear of the parts on the board).
+// 25 mm (the box is 350 × 250 × 90 mm). Ten TO-247-4 parts lie flat on the
+// liquid-cooled floor, legs bent up into the power board above: six for the
+// three-phase PFC (one half-bridge per phase), four for the DC-DC full bridge.
+// Groups run from 0 (cold plate) to 10 (cover, lifted well clear of the parts on
+// the board).
 
 const BOX = { x: 7, z: 5, floor: 0.4, top: 3.4, wall: 0.3 };
 const PCB = { y0: 1.6, y1: 1.75 };
 const ROW = { z0: 2.0, z1: 3.3 }; // TO-247 bodies near the front, legs toward −z
-const PFC_X = [-5.2, -3.8, -2.4, -1.0];
-const DCDC_X = [1.0, 2.4, 3.8, 5.2];
+// Centers, in pairs: each pair is one half-bridge (one leg of the bridge).
+const PFC_X = [-6.05, -5.15, -4.15, -3.25, -2.25, -1.35];
+const DCDC_X = [1.15, 2.05, 3.05, 3.95];
+const HALF = 0.4; // half the drawn body width
 const IND_X = [-5.4, -3.6, -1.8];
 const T = transformer({ cx: 3.3, cz: 1.0, w: 2.6, d: 1.2, y0: PCB.y1, y1: 3.2, bulge: 0.45 });
 
 // One TO-247-4, lying tab-down on the cold plate, legs bent up into the board.
 function to247(xc) {
-  const body = box(xc - 0.5, BOX.floor + 0.12, ROW.z0, xc + 0.5, BOX.floor + 0.42, ROW.z1);
-  const tab = box(xc - 0.5, BOX.floor, ROW.z0, xc + 0.5, BOX.floor + 0.12, ROW.z1 + 0.35);
-  const legs = [-0.36, -0.12, 0.12, 0.36].flatMap((dx) => [
-    box(xc + dx - 0.04, 0.62, ROW.z0 - 0.35, xc + dx + 0.04, 0.68, ROW.z0),
-    box(xc + dx - 0.04, 0.62, ROW.z0 - 0.43, xc + dx + 0.04, PCB.y0, ROW.z0 - 0.35),
+  const body = box(xc - HALF, BOX.floor + 0.12, ROW.z0, xc + HALF, BOX.floor + 0.42, ROW.z1);
+  const tab = box(xc - HALF, BOX.floor, ROW.z0, xc + HALF, BOX.floor + 0.12, ROW.z1 + 0.35);
+  const legs = [-0.28, -0.095, 0.095, 0.28].flatMap((dx) => [
+    box(xc + dx - 0.035, 0.62, ROW.z0 - 0.35, xc + dx + 0.035, 0.68, ROW.z0),
+    box(xc + dx - 0.035, 0.62, ROW.z0 - 0.43, xc + dx + 0.035, PCB.y0, ROW.z0 - 0.35),
   ]);
   return { body, tab, legs };
 }
@@ -32,25 +36,31 @@ const VPK = 325; // 230 V rms
 const IPK = 22.6; // 16 A rms per phase: 3 × 230 V × 16 A ≈ 11 kW
 const RIPPLE = 2.5; // A, drawn at 1 kHz; the real switching is ≈ 100 kHz
 const w = (2 * Math.PI) / 20; // 50 Hz, t in ms
-export const PFC = { VPK, IPK, phases: 3 };
+export const PFC = { VPK, IPK, phases: 3, switches: PFC_X.length };
+export const DCDC = { switches: DCDC_X.length };
 
 const tube = (pts) => pts.map(([x, y, z, s = 0.15]) => [x, y, z, s]);
+// Down a switch's legs into its body and back up to the board.
+const dip = (x) => [
+  [x, 1.85, 1.6, 0.2],
+  [x, 1.2, 1.61, 0.04],
+  [x, 0.75, 2.6, 0.3],
+  [x, 1.2, 1.61, 0.04],
+];
+// One power path per grid phase k: inductor, the phase's half-bridge, the DC
+// link, two DC-DC switches, the transformer and out to the battery.
 const flow = (k) =>
   tube([
     [-7.6, 1.5, 2.0, 0.1],
     [-6.4, 1.85, 2.0, 0.25],
-    [IND_X[Math.min(k, 2)], 2.0, 1.9, 0.2],
-    [IND_X[Math.min(k, 2)], 2.3, 1.0, 0.5],
-    [PFC_X[k], 1.85, 1.6, 0.2],
-    [PFC_X[k], 1.2, 1.61, 0.04],
-    [PFC_X[k], 0.75, 2.6, 0.3],
-    [PFC_X[k], 1.2, 1.61, 0.04],
-    [PFC_X[k] + 0.4, 1.85, 1.4, 0.2],
+    [IND_X[k], 2.0, 1.9, 0.2],
+    [IND_X[k], 2.3, 1.0, 0.5],
+    ...dip(PFC_X[2 * k]),
+    ...dip(PFC_X[2 * k + 1]),
+    [PFC_X[2 * k + 1] + 0.4, 1.85, 1.4, 0.2],
     [0, 2.4, 1.0, 0.45],
-    [DCDC_X[k], 1.85, 1.4, 0.2],
-    [DCDC_X[k], 1.2, 1.61, 0.04],
-    [DCDC_X[k], 0.75, 2.6, 0.3],
-    [DCDC_X[k], 1.2, 1.61, 0.04],
+    ...dip(DCDC_X[k]),
+    ...dip(DCDC_X[k + 1]),
     [3.3, 2.5, 1.0, 0.5],
     [5.8, 2.4, 2.8, 0.35],
     [7.4, 1.5, 0, 0.15],
@@ -67,24 +77,24 @@ export default {
   kicker: 'SiC MOSFET · in a product',
   subtitle: 'The box in an electric car that charges the battery from an AC charge point',
   summary: [
-    `When an electric car charges from an ordinary AC charge point, the charge point only switches the grid on. The conversion happens in this box in the car: three-phase AC in, 400 to 800 V DC out to the battery.`,
-    `It works in two stages, each built from four of the TO-247-4 SiC MOSFETs from the package view. The first (PFC) draws a clean sine-wave current from each grid phase and makes about 800 V DC. The second switches that through a transformer to whatever voltage the battery needs, and keeps the battery insulated from the grid.`,
+    `When an electric car charges from an ordinary AC charge point, the charge point only switches the grid on. The conversion happens in this box in the car: three-phase AC in, DC out to the battery at whatever voltage it needs: around 400 V or 800 V, depending on the car.`,
+    `It works in two stages, built from ten of the TO-247-4 SiC MOSFETs from the package view. The first (PFC) has six, a pair (half-bridge) for each grid phase: it draws a clean sine-wave current from each phase and makes about 800 V DC. The second has four: it switches that through a transformer to whatever voltage the battery needs, and keeps the battery insulated from the grid.`,
     `The MOSFETs lie flat on the aluminum floor, which has coolant flowing through it. The orange cable is the high-voltage battery connection: in a car, orange always means high voltage.`,
   ],
   stats: [
     ['Input', '3 × 230 V AC (400 V between phases), 16 A per phase'],
-    ['Output', '≈ 250–850 V DC to the battery'],
-    ['The switches', 'Eight 1200 V SiC MOSFETs in TO-247-4, ≈ 100 kHz'],
+    ['Output', 'The battery voltage: ≈ 400 V or ≈ 800 V class, depending on the car'],
+    ['The switches', 'Ten 1200 V SiC MOSFETs in TO-247-4, ≈ 100 kHz'],
     ['Efficiency', '≈ 95–97 %: about 400 W of heat at full power'],
     ['Size', '≈ 350 × 250 × 90 mm, ≈ 8 kg, liquid-cooled'],
   ],
   legendSwitch: 'sicBodies',
   chain: [
     { node: 'Grid', value: '3 × 230 V AC, 50 Hz' },
-    { conv: 'Active rectifier (PFC)', how: 'Four SiC MOSFETs and three inductors', ours: true },
+    { conv: 'Active rectifier (PFC)', how: 'Six SiC MOSFETs (a half-bridge per phase) and three inductors', ours: true },
     { node: 'DC link', value: '≈ 800 V DC, held by the film capacitors' },
-    { conv: 'Isolated DC-DC converter', how: 'Four SiC MOSFETs and a transformer', ours: true },
-    { node: 'Battery', value: '≈ 250–850 V DC' },
+    { conv: 'Isolated DC-DC converter', how: 'Four SiC MOSFETs (a full bridge) and a transformer', ours: true },
+    { node: 'Battery', value: '≈ 400 or 800 V DC' },
   ],
   gap: 0.75,
   drawing: { code: 'APP-OBC-11KW-SIC', sizeLabel: 'BOX', size: '350 × 250 mm' },
@@ -152,17 +162,17 @@ export default {
     {
       id: 'sicBodies',
       label: 'SiC MOSFETs',
-      name: 'Eight SiC MOSFETs in TO-247-4',
+      name: 'Ten SiC MOSFETs in TO-247-4',
       kind: 'mold',
       group: 1,
       solidInXray: true,
-      anchor: [-5.2, BOX.floor + 0.42, 3.3],
+      anchor: [-6.05, BOX.floor + 0.42, 3.3],
       solids: DEVICES.map((d) => d.body),
       info: {
         facts: [
           ['Part', 'The TO-247-4 from the package view, 1200 V, ≈ 40 mΩ'],
-          ['Left four', 'The PFC stage'],
-          ['Right four', 'The isolated DC-DC stage'],
+          ['Left six', 'The PFC stage: three half-bridges, one per grid phase'],
+          ['Right four', 'The isolated DC-DC stage: a full bridge driving the transformer'],
         ],
         role: `Do all the switching. Each loses a few tens of watts, which goes down through its tab into the cold plate.`,
         why: `SiC lets them block the 800 V DC link with 1200 V parts while switching at around 100 kHz with low loss. Silicon IGBTs could not switch that fast, and fast switching is what keeps the magnetics small.`,
@@ -190,12 +200,12 @@ export default {
       name: 'Clamp bars',
       kind: 'heatsink',
       group: 2,
-      anchor: [0.4, 0.94, 2.65],
-      solids: [box(-5.8, BOX.floor + 0.42, 2.4, -0.4, 0.94, 2.9), box(0.4, BOX.floor + 0.42, 2.4, 5.8, 0.94, 2.9)],
+      anchor: [0.65, 0.94, 2.65],
+      solids: [box(-6.55, BOX.floor + 0.42, 2.4, -0.85, 0.94, 2.9), box(0.65, BOX.floor + 0.42, 2.4, 4.45, 0.94, 2.9)],
       info: {
         facts: [['Under the tabs', 'A thin insulating pad, since each tab is at its drain voltage']],
         role: `Press each row of MOSFETs flat onto the cold plate with a controlled force.`,
-        why: `Clamping instead of one screw per part presses evenly over the whole tab, which keeps the thermal resistance low and the same for all eight.`,
+        why: `Clamping instead of one screw per part presses evenly over the whole tab, which keeps the thermal resistance low and the same for all ten.`,
         look: `Metal bars or spring clips across the row of transistors.`,
       },
     },
@@ -231,7 +241,7 @@ export default {
           ['One per phase', 'Copper wire on a powder-iron or ferrite ring'],
           ['Current', '16 A rms each'],
         ],
-        role: `Sit between each grid phase and the first four MOSFETs. By switching, the MOSFETs steer the current through them so it follows the grid voltage.`,
+        role: `Sit between each grid phase and its pair of PFC MOSFETs. By switching, the MOSFETs steer the current through them so it follows the grid voltage.`,
         why: `Their size falls as the switching frequency rises, which is one reason SiC is used here.`,
         look: `The large copper-wound rings.`,
       },
@@ -362,14 +372,14 @@ export default {
     title: 'Grid to battery',
     stages: [
       `Three grid phases come in at 230 V each.`,
-      `The first four SiC MOSFETs (PFC) switch at about 100 kHz, so the current through each inductor follows the sine shape of its phase voltage. They make about 800 V DC.`,
+      `The six PFC MOSFETs, a pair per phase, switch at about 100 kHz, so the current through each inductor follows the sine shape of its phase voltage. They make about 800 V DC.`,
       `The film capacitors hold the 800 V DC link.`,
       `The other four MOSFETs switch that across the transformer at high frequency.`,
       `Rectified on the other side, it charges the battery through the orange cable.`,
     ],
     note: `The dots show power flowing from the grid to the battery. The MOSFETs flash to show they are switching, slowed down tens of thousands of times.`,
     dot: 0.1,
-    paths: [0, 1, 2, 3].map((k) => ({ kind: 'load', pts: flow(k) })),
+    paths: [0, 1, 2].map((k) => ({ kind: 'load', pts: flow(k) })),
     counts: { load: 200, gate: 0 },
     pulse: ['sicBodies'],
     spin: {},

@@ -16,9 +16,10 @@ const T = transformer({ cx: 1.1, cz: -0.4, w: 3.0, d: 1.4, y0: PCB.y1, y1: 3.9, 
 const VIN = 325; // rectified 230 V mains
 const VR = 110; // secondary voltage reflected to the primary
 const PERIOD = 1000 / 150; // µs, 150 kHz
-const TON = 2.0; // µs
-const TDEMAG = 3.5; // µs after turn-off until the transformer is empty
-const IPK = 1.5; // A, primary current at turn-off
+// Volt-second balance: the core charges with VIN·TON and resets with VR·TDEMAG.
+const TON = 1.5; // µs
+const TDEMAG = 4.4; // µs after turn-off until the transformer is empty
+const IPK = 2.0; // A, primary current at turn-off
 function drainV(t) {
   const tau = t % PERIOD;
   if (tau < TON) return 0;
@@ -32,7 +33,7 @@ const primaryI = (t) => {
   return tau < TON ? (IPK * tau) / TON : 0;
 };
 
-export const FLYBACK = { VIN, VR, PERIOD, TON, IPK };
+export const FLYBACK = { VIN, VR, PERIOD, TON, TDEMAG, IPK };
 
 const primary = (x) => [
   [x, SEAM, -5.3, 0.05],
@@ -60,7 +61,7 @@ export default {
   name: '65 W USB-C charger',
   short: 'Phone charger',
   kicker: 'GaN HEMT · in a product',
-  subtitle: 'A laptop and phone charger, about the size of a matchbox, opened up',
+  subtitle: 'A laptop and phone charger that fits in your palm, opened up',
   summary: [
     `Inside a small GaN charger the switch from the package view sits flat on the circuit board next to the transformer. It chops the rectified mains about 150 000 times a second.`,
     `That speed is the point. The energy the transformer has to hold in each cycle shrinks as the frequency rises, so a fast switch allows a much smaller transformer, and the transformer and the bulk capacitor are what set a charger's size. A silicon charger of the same power is typically much bulkier.`,
@@ -69,7 +70,7 @@ export default {
   stats: [
     ['Input', '100–240 V AC, 50 or 60 Hz'],
     ['Output', '5–20 V DC over USB-C, up to 65 W'],
-    ['The switch', 'One 650 V GaN HEMT, ≈ 150 mΩ, in a QFN package'],
+    ['The switch', 'One 650 V GaN HEMT, ≈ 150 mΩ, in a PQFN package'],
     ['Efficiency', '≈ 92–94 %: about 5 W of heat at full load'],
     ['Size', '≈ 52 × 52 × 30 mm'],
   ],
@@ -234,9 +235,9 @@ export default {
       solids: [box(3.0, PCB.y1, -3.8, 4.6, 1.12, -2.2)],
       info: {
         facts: [
-          ['Part', 'The package from the package view, 650 V'],
+          ['Part', 'The PQFN package from the package view, here with a smaller 650 V die of ≈ 150 mΩ'],
           ['Switches', '≈ 150 000 times per second'],
-          ['Loses', 'About a watt'],
+          ['Loses', 'A watt or two'],
         ],
         role: `Connects the transformer's primary across the 300 V from the bulk capacitor, then lets go, over and over. Each pulse moves a small packet of energy to the output.`,
         why: `It switches in a few nanoseconds with almost no gate charge and no reverse recovery, so even at 150 kHz its switching losses stay small. A silicon MOSFET would run hot at this frequency.`,
@@ -372,7 +373,7 @@ export default {
           short: 'primary current',
           unit: 'A',
           yMin: 0,
-          yMax: 2,
+          yMax: 2.5,
           decimals: 2,
           series: [{ label: 'current', cls: 'accent', fn: primaryI }],
         },

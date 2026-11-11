@@ -39,7 +39,7 @@ const STEPS = [
     view: VIEW.standard,
     zoom: 1,
     title: 'One cell of a power switch',
-    body: `This is one cell of a 1200 V silicon carbide MOSFET, pulled apart layer by layer. A real chip repeats it thousands of times side by side. We will build it up from the bottom, then switch it on and off.`,
+    body: `This is one cell of a 1200 V silicon carbide MOSFET, pulled apart layer by layer. A real chip repeats it hundreds of thousands of times side by side. We will build it up from the bottom, then switch it on and off.`,
   },
   {
     focus: 'substrate',
@@ -126,7 +126,7 @@ const STEPS = [
     view: VIEW.standard,
     zoom: 0.95,
     title: 'Conductivity modulation',
-    body: `Electrons and holes fill the drift about a thousand times more densely than its doping, so even this thick silicon layer conducts well. The catch: at turn-off the plasma takes microseconds to clear, which keeps IGBTs below about 20 kHz.`,
+    body: `Electrons and holes fill the drift about a thousand times more densely than its doping, so even this thick silicon layer conducts well. The catch: at turn-off the plasma takes microseconds to clear, which keeps most IGBTs below about 20 kHz.`,
   },
 
   {
@@ -259,7 +259,7 @@ const STEPS = [
     view: VIEW.standard,
     zoom: 1,
     title: 'Why convert electricity?',
-    body: `The grid delivers AC: 230 V that reverses 50 times a second. Phones, batteries and chips need DC at other voltages, and motors run best on AC at a frequency of their own. A converter, like this phone charger, changes one form into another by switching fast, losing only a few percent instead of burning the difference off as heat.`,
+    body: `The grid delivers AC: 230 V that swings back and forth 50 times a second. Phones, batteries and chips need DC at other voltages, and motors run best on AC at a frequency of their own. A converter, like this phone charger, changes one form into another by switching fast, losing only a few percent instead of burning the difference off as heat.`,
   },
   {
     device: 'igbt',
@@ -299,7 +299,7 @@ const STEPS = [
     view: VIEW.standard,
     zoom: 0.9,
     title: 'In an electric car’s charger',
-    body: `This 11 kW on-board charger uses eight TO-247-4 SiC MOSFETs on a liquid-cooled floor. The first four draw a sine-wave current from each grid phase; the other four drive a small, fast transformer that charges the battery through the orange high-voltage cable.`,
+    body: `This 11 kW on-board charger uses ten TO-247-4 SiC MOSFETs on a liquid-cooled floor. The first six, a pair per grid phase, draw a sine-wave current from each phase; the other four drive a small, fast transformer that charges the battery through the orange high-voltage cable.`,
   },
   {
     device: 'gan',
@@ -372,7 +372,7 @@ const STEPS = [
     view: VIEW.standard,
     zoom: 0.8,
     title: 'GaN’s narrow gate margin',
-    body: `The GaN gate is driven at about 6 V and rated only to about 7 V, so a little ringing in the gate loop can overstress it. That is why GaN packages have a Kelvin source and short gate wires, and why many put the gate driver in the same package.`,
+    body: `The GaN gate is driven at about 5–6 V and rated only to about 6–7 V, so a little ringing in the gate loop can overstress it. That is why GaN packages have a Kelvin source and short gate wires, and why many put the gate driver in the same package.`,
   },
   {
     device: 'igbt',
@@ -404,7 +404,7 @@ const STEPS = [
     view: VIEW.standard,
     zoom: 0.95,
     title: 'Data centers and AI',
-    body: `AI data centers now draw tens to hundreds of kilowatts per server rack. To cut losses, power distribution inside them is starting to move to higher-voltage DC, up to about 800 V, with compact GaN and SiC converters close to the processors. At that scale, each percent of efficiency adds up to a large power plant's output.`,
+    body: `AI data centers now draw tens to hundreds of kilowatts per server rack. To cut losses, power inside them is starting to move to DC at up to about 800 V, with compact GaN and SiC converters near the processors. Across all data centers, each percent of efficiency is worth about half a large power plant today, and a whole one by 2030 if growth holds.`,
   },
   {
     device: 'igbt',
@@ -424,7 +424,7 @@ const STEPS = [
     view: VIEW.standard,
     zoom: 0.95,
     title: 'Beyond today’s SiC and GaN',
-    body: `SiC is moving to 200 mm wafers and GaN-on-silicon to 300 mm, cutting cost. GaN is also being built vertically, on GaN wafers, to reach 1200 V, and as bidirectional switches. Further out, gallium oxide and diamond have even wider bandgaps, but gallium oxide conducts heat poorly and cannot be made p-type.`,
+    body: `SiC is moving to 200 mm wafers and GaN-on-silicon to 300 mm, cutting cost. GaN is also being built vertically, on GaN wafers, to reach 1200 V, and as bidirectional switches. Further out, gallium oxide and diamond have even wider bandgaps, but gallium oxide conducts heat poorly and has no practical p-type doping.`,
   },
   {
     device: 'sic',
@@ -435,7 +435,7 @@ const STEPS = [
     view: VIEW.low,
     zoom: 0.95,
     title: 'Packages that run hotter',
-    body: `SiC can run hotter than its packages allow. Sintered silver, copper wires, cooling from both sides and dies embedded in the circuit board aim at 200 °C and beyond, with less inductance. Each new material brings failure mechanisms that today's tests and lifetime models have not yet been proven against.`,
+    body: `SiC can run hotter than its packages allow. Sintered silver, copper wires, cooling from both sides and dies embedded in the circuit board aim to raise today's usual 175 °C limit toward 200 °C, with less inductance. Each new material brings failure mechanisms that today's tests and lifetime models have not yet been proven against.`,
   },
   {
     device: 'sic',

@@ -10,7 +10,7 @@ import {
   FIELD_GRADIENT_CSS,
   THERMAL_GRADIENT_CSS,
 } from './palette.js';
-import { blockingResult } from './physics.js';
+import { blockingResult, blockingStatus } from './physics.js';
 import { thermalStack } from './thermal.js';
 import { renderFieldPlot } from './fieldplot.js';
 import { renderHeatPlot, bindHeatTooltip, fmtR, fmtT } from './heatplot.js';
@@ -523,17 +523,12 @@ function updateBlocking() {
   const r = blockingResult(b, s);
   $('#volt-out').textContent = `${s.V} V`;
 
-  const ratio = r.Ec > 0 ? r.Epk / r.Ec : 0;
+  const st = blockingStatus(b, r);
   const status = $('#block-status');
-  status.className = `status ${ratio >= 1 ? 'is-danger' : ratio > 0.8 ? 'is-warn' : 'is-ok'}`;
-  status.textContent =
-    ratio >= 1
-      ? 'Avalanche breakdown: the peak field has reached the critical field'
-      : `Blocking · peak field at ${Math.round(ratio * 100)} % of critical`;
+  status.className = `status is-${st.level}`;
+  status.textContent = st.text;
   // The same numbers in short, inside the tour card, for layouts where the panel is out of sight.
-  els.tourReadout.textContent = `${s.V} V · peak ${fmtField(r.Epk)} · ${
-    ratio >= 1 ? 'avalanche breakdown' : `${Math.round(ratio * 100)} % of critical`
-  }`;
+  els.tourReadout.textContent = `${s.V} V · peak ${fmtField(r.Epk)} · ${st.short}`;
 
   const rows = [
     ['Peak field', fmtField(r.Epk)],

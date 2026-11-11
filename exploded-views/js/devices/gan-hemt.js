@@ -44,7 +44,7 @@ export default {
   stats: [
     ['Voltage classes', '15–650 V (1200 V emerging)'],
     ['On-resistance', '≈ 25–500 mΩ for 650 V discretes'],
-    ['Gate drive', '+5 to +6 V on, 0 V or slightly negative off; max ≈ 7 V'],
+    ['Gate drive', '+5 to +6 V on, 0 V or slightly negative off; max ≈ 6–7 V'],
     ['Switching', '≈ 100 kHz to several MHz'],
     ['Used in', 'USB-C chargers, data-center power supplies, LiDAR, solar microinverters'],
   ],
@@ -142,7 +142,7 @@ export default {
         facts: [
           ['What', 'Free electrons at the AlGaN/GaN boundary'],
           ['Thickness', '≈ 2–5 nm'],
-          ['Sheet density', '≈ 10<sup>13</sup> electrons/cm²'],
+          ['Sheet density', '≈ 0.5–1 × 10<sup>13</sup> electrons/cm²'],
           ['Mobility', '≈ 1500–2000 cm²/V·s'],
         ],
         role: `The conducting channel. AlGaN and GaN have different built-in electric polarization, and the difference pulls a dense sheet of electrons to their boundary without any doping.`,
@@ -167,7 +167,7 @@ export default {
       shapes: [rect(-5, Y2DEG[1], 5, 4.7)],
       info: {
         facts: [
-          ['Material', 'Al<sub>0.25</sub>Ga<sub>0.75</sub>N (about 20–25 % aluminum)'],
+          ['Material', 'Al<sub>x</sub>Ga<sub>1−x</sub>N with about 15–25 % aluminum, at the low end in normally-off parts'],
           ['Thickness', '≈ 15 nm'],
         ],
         role: `Grows on the GaN stretched to match its crystal. The strain adds piezoelectric polarization, and together the two kinds of polarization create the 2DEG below.`,
@@ -187,7 +187,7 @@ export default {
           ['Doping', 'Mg ≈ 10<sup>19</sup> cm<sup>−3</sup>'],
         ],
         role: `Lifts the energy bands under the gate enough to empty the 2DEG there at 0 V, so the transistor stays off without any gate drive.`,
-        why: `Normally-off behavior is essential for safety in power converters. The cost is a low threshold (about 1.5 V) and a narrow gate voltage window (about 7 V maximum), so the gate drive must be clean and free of ringing.`,
+        why: `Normally-off behavior is essential for safety in power converters. The cost is a low threshold (about 1.5 V) and a narrow gate voltage window (about 6–7 V maximum, depending on the maker), so the gate drive must be clean and free of ringing.`,
       },
     },
     {
@@ -198,7 +198,7 @@ export default {
       shapes: [rect(-1.9, 5.05, -1.1, 5.35)],
       info: {
         facts: [
-          ['Material', 'TiN or Ni/Au, a Schottky contact on p-GaN'],
+          ['Material', 'Usually a metal such as TiN forming a Schottky contact on the p-GaN; some designs use an ohmic contact instead and draw a small, steady gate current'],
           ['Thickness', '≈ 0.1–0.3 µm'],
         ],
         role: `Applies the gate voltage. Driving it to about +6 V brings the 2DEG back under the gate. It is wired out at the end of the gate finger, out of this cross-section.`,
@@ -286,6 +286,7 @@ export default {
 
   blocking: {
     kind: 'lateral',
+    avalanche: false, // no avalanche mechanism: past the critical field it fails
     title: 'Holding off the drain voltage, sideways',
     terminal: 'Drain',
     Vrated: 650,
@@ -300,7 +301,7 @@ export default {
     axis: 'Distance from the gate edge toward the drain (µm)',
     caption: `Field along the 2DEG, from the gate edge to the drain (illustrative shape). The shaded area equals the voltage.`,
     text: [
-      `The gate is at 0 V, so the p-GaN keeps the 2DEG empty under the gate. With the drain positive, electrons are swept out of the 2DEG between gate and drain, starting at the gate edge. Above about 100 V it is empty all the way to the drain.`,
+      `The gate is at 0 V, so the p-GaN keeps the 2DEG empty under the gate. With the drain positive, electrons are swept out of the 2DEG between gate and drain, starting at the gate edge. In this model it is empty all the way to the drain above about 100 V.`,
       `In a lateral device the field runs sideways, and it crowds at sharp metal edges. Turn the field plate off to see the single spike at the gate edge break down before 650 V.`,
       `This shape is illustrative: real lateral fields need a 2D simulation, and real parts are usually limited by leakage through the buffer to the substrate before this point.`,
     ],

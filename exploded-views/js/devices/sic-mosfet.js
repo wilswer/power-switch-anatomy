@@ -23,12 +23,12 @@ export default {
   subtitle: '1200 V planar power MOSFET in 4H silicon carbide',
   summary: [
     `A power MOSFET is a voltage-controlled switch. Its gate sits on a thin insulator, so holding it on takes almost no current; only charging and discharging the gate costs energy.`,
-    `This one is <b>vertical</b>: source and gate are on top, the drain is the whole back of the die, and current flows straight down. A real die repeats this cell thousands of times side by side.`,
+    `This one is <b>vertical</b>: source and gate are on top, the drain is the whole back of the die, and current flows straight down. A real die repeats this cell hundreds of thousands of times side by side, in long stripes.`,
     `Silicon carbide's wide bandgap lets a layer only about 11 µm thick block 1200 V. A silicon device needs roughly ten times that thickness, with far higher resistance.`,
   ],
   stats: [
     ['Voltage classes', '650 V – 3.3 kV'],
-    ['On-resistance', '≈ 10–160 mΩ for 1200 V discretes'],
+    ['On-resistance', '≈ 7 mΩ to a few hundred mΩ for 1200 V discretes'],
     ['Gate drive', '+15 to +18 V on, −3 to −5 V off'],
     ['Switching', '≈ 20–200 kHz'],
     ['Used in', 'EV traction inverters, fast chargers, solar inverters'],
@@ -83,7 +83,7 @@ export default {
           ['Doping', '≈ 10<sup>18</sup> cm<sup>−3</sup>'],
         ],
         role: `A transition layer between the substrate and the drift. It also stops the electric field, which ends abruptly here.`,
-        why: `Substrates contain crystal defects called basal-plane dislocations. If they reach the drift, current through the body diode can make them grow into stacking faults that raise on-resistance over time (bipolar degradation). The buffer converts most of them into harmless forms.`,
+        why: `Substrates contain crystal defects called basal-plane dislocations. If they reach the drift, current through the body diode can make them grow into stacking faults that raise on-resistance over time (bipolar degradation). Most are turned into harmless kinds as the layers grow, and the heavily doped buffer makes holes recombine before they reach the ones that remain.`,
       },
     },
     {
@@ -288,7 +288,7 @@ export default {
     text: [
       `The gate is held at 0 V or below, so there is no channel. The drain is positive, which reverse-biases the junction between the p-well and the n<sup>−</sup> drift.`,
       `Free electrons are pushed out of the drift, leaving a depletion region that acts as an insulator. The field is strongest at the junction and falls off with depth. Above about 900 V the depletion reaches the buffer, and the field profile turns from a triangle into a trapezoid.`,
-      `When the peak reaches the critical field, avalanche breakdown sets in. Switch to the Si IGBT at the same voltage and compare the depth axis.`,
+      `When the peak reaches the critical field, avalanche breakdown sets in. The readout's ideal breakdown assumes a flat, endless junction; real dies break down somewhat lower, at the edge of the die and the corners of the cells, and are rated with margin below that. Switch to the Si IGBT at the same voltage and compare the depth axis.`,
     ],
   },
 };

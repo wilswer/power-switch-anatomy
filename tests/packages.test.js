@@ -61,10 +61,15 @@ for (const pkg of Object.values(PACKAGES)) {
   test(`${pkg.name}: the heat model lands in datasheet territory`, () => {
     const h = pkg.heat;
     const at = (P) => thermalStack({ source: h.source, layers: h.layers, P, Tref: h.Tref });
-    // Typical junction-to-case values for these packages (see the parts' facts).
-    const RANGE = { sic: [0.25, 0.7], gan: [0.2, 1.0], igbt: [0.1, 0.3] }[pkg.device];
+    // The model's junction-to-case resistance lies in the range the package's
+    // own facts quote, e.g. "R<sub>th(j-c)</sub> ≈ 0.05–0.2 K/W per switch".
+    const stated = pkg.stats.find(([k]) => k === 'Thermal resistance')[1];
+    const RANGE = stated.match(/≈ ([\d.]+)–([\d.]+) K\/W/).slice(1).map(Number);
     const r = at(h.Pdefault);
-    assert.ok(r.Rjc > RANGE[0] && r.Rjc < RANGE[1], `R_th(j-c) = ${r.Rjc.toFixed(3)} K/W`);
+    assert.ok(
+      r.Rjc >= RANGE[0] && r.Rjc <= RANGE[1],
+      `R_th(j-c) = ${r.Rjc.toFixed(3)} K/W, but the text says ${RANGE.join('–')} K/W`,
+    );
     // The default load is comfortable; the slider reaches past the limit.
     assert.ok(r.Tj < h.Tmax - 10, `Tj = ${r.Tj.toFixed(0)} °C at the default load`);
     assert.ok(at(h.Pmax).Tj > h.Tmax, 'the power slider should be able to overheat the die');

@@ -61,7 +61,7 @@ export default {
   subtitle: 'A variable-frequency drive: it runs a motor at any speed from the fixed-frequency grid',
   summary: [
     `Pumps, fans, conveyors and elevators are driven by electric motors, and most of them now run from a drive like this one. It turns the grid's fixed 50 Hz into whatever frequency and voltage the motor needs, so the motor can run at any speed.`,
-    `Inside are three half-bridge modules from the package view, one per motor wire, bolted to a finned heatsink with a fan. Above them a laminated busbar connects them to a bank of capacitors that holds about 560 V DC, and a gate-driver board switches them.`,
+    `Inside are three half-bridge modules from the package view, one per motor wire, bolted to a finned heatsink with a fan. (A real 30 kW drive would more often use one six-switch module; three of the 62 mm modules are more typical from about 50 kW.) Above them a laminated busbar connects them to a bank of capacitors that holds about 560 V DC, and a gate-driver board switches them.`,
     `Running a pump or fan only as fast as needed, instead of throttling it at full speed, often saves a third or more of its energy. Drives like this are one of the biggest energy savers in industry.`,
   ],
   stats: [

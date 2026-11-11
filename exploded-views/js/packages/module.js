@@ -36,9 +36,9 @@ const STRIPS = [
   rectXZ(-1.55, 2.375, 0.7, 2.725), // E2
 ];
 const DIES = {
-  T1: [-3.95, -2.2, -2.7, -0.95],
+  T1: [-4.04, -2.52, -2.63, -0.95], // ≈ 11.3 × 12.6 mm, a 150 A, 1200 V die
   D1: [-3.85, -0.3, -2.8, 0.9],
-  T2: [-0.4, -2.2, 0.85, -0.95],
+  T2: [-0.49, -2.52, 0.92, -0.95],
   D2: [-0.3, -0.3, 0.75, 0.9],
 };
 const dieBox = ([x0, z0, x1, z1], y0, y1) => box(x0, y0, z0, x1, y1, z1);
@@ -157,7 +157,7 @@ export default {
   ],
   ladder: [
     ['One cell', '≈ 10–20 µm wide (the cell view)'],
-    ['The die', '≈ 10 × 10 mm, 0.12 mm thick · ≈ 600 stripes of cells'],
+    ['The die', '≈ 11 × 12.5 mm, 0.12 mm thick · ≈ 600 stripes of cells'],
     ['The module', '106 × 62 mm, four dies here, often 12 or more'],
   ],
   legendDie: 'dieSi',
@@ -331,7 +331,7 @@ export default {
       solids: [dieBox(DIES.T1, Y.chipSolder, Y.die), dieBox(DIES.T2, Y.chipSolder, Y.die)],
       info: {
         facts: [
-          ['Size', '≈ 10 × 10 mm for 150 A at 1200 V'],
+          ['Size', '≈ 11 × 12.5 mm for 150 A at 1200 V'],
           ['Thickness', '≈ 0.12 mm, barely more than the drift layer'],
           ['Top', 'Emitter metal and a small gate pad'],
         ],
@@ -396,7 +396,7 @@ export default {
           ['Count', 'Often over 100 in a module; each carries ≈ 10–20 A'],
         ],
         role: `Connect each die's top (emitter or anode) to the next copper island.`,
-        why: `Wire lift-off is the most common way modules fail in service. Every load cycle heats the wire and the die by different amounts, and cracks slowly grow through the bond. Module makers count lifetime in temperature cycles.`,
+        why: `Wire lift-off is the classic way modules wear out, and the usual end of life in power-cycling tests. Every load cycle heats the wire and the die together, but aluminum expands about eight times as much as silicon, so each cycle shears the bond and cracks slowly grow through it. Module makers count lifetime in temperature cycles.`,
         look: `The silvery rows of arched wires in a module with its gel removed.`,
       },
     },
@@ -498,8 +498,8 @@ export default {
           ['Material', 'Soft, clear silicone gel'],
           ['Fills', 'The housing, covering the substrate, dies and wires'],
         ],
-        role: `Insulates everything inside, keeps out moisture, and stops arcing between parts at high voltage.`,
-        why: `It is soft enough not to pull on the bond wires as things expand. Discrete packages use hard epoxy instead, but at module size epoxy would crack the large ceramic tiles.`,
+        role: `Insulates everything inside, keeps dust and liquid water off the surfaces, and stops arcing between parts at high voltage. It does not keep out water vapor, which slowly diffuses through it.`,
+        why: `It is soft enough not to pull on the bond wires or the large ceramic tiles as things expand. Discrete packages use hard epoxy instead; molded modules exist too, but need a filling whose expansion is carefully matched to the parts inside.`,
         look: `The clear, jelly-like filling of an opened module.`,
       },
     },
@@ -580,11 +580,11 @@ export default {
     Pstep: 5,
     Pdefault: 200,
     loadNote: 'Losses of one switch; 200 W is typical for a 150 A die at full load',
-    source: [9, 9],
+    source: [10.5, 11.8],
     refParts: ['heatsink'],
     layers: [
-      { id: 'die', name: 'IGBT die', short: 'die', t: 0.12, k: 148, size: [10, 10], inPackage: true, parts: ['igbtDies'] },
-      { id: 'chip', name: 'Chip solder', short: 'solder', t: 0.08, k: 55, size: [10, 10], inPackage: true, parts: ['chipSolder'] },
+      { id: 'die', name: 'IGBT die', short: 'die', t: 0.12, k: 148, size: [11.3, 12.6], inPackage: true, parts: ['igbtDies'] },
+      { id: 'chip', name: 'Chip solder', short: 'solder', t: 0.08, k: 55, size: [11.3, 12.6], inPackage: true, parts: ['chipSolder'] },
       { id: 'cuTop', name: 'Top copper', short: 'Cu', t: 0.3, k: 390, size: [24, 34], inPackage: true, parts: ['topCopper'] },
       { id: 'ceramic', name: 'Alumina ceramic', short: 'ceramic', t: 0.38, k: 24, size: [44, 46], inPackage: true, parts: ['ceramic'] },
       { id: 'cuBottom', name: 'Bottom copper', short: 'Cu', t: 0.3, k: 390, size: [42, 44], inPackage: true, parts: ['bottomCopper'] },

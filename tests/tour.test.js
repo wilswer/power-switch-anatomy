@@ -114,8 +114,11 @@ test('the product steps agree with the product models', () => {
   // "Each module only ever connects its wire to 0 or 560 V"
   assert.equal(DRIVE.VDC, 560);
   assert.equal(APPS.igbt.parts.find((p) => p.id === 'modules').solids.length, 3);
-  // "eight TO-247-4 SiC MOSFETs"
-  assert.equal(APPS.sic.parts.find((p) => p.id === 'sicBodies').solids.length, 8);
+  // "ten TO-247-4 SiC MOSFETs ... The first six ... the other four"
+  assert.equal(APPS.sic.parts.find((p) => p.id === 'sicBodies').solids.length, 10);
+  const obcStep = TOUR.find((s) => s.device === 'sic' && s.scale === 'app' && s.mode === 'action');
+  assert.match(obcStep.body, /ten TO-247-4 SiC MOSFETs/);
+  assert.match(obcStep.body, /first six/);
   // "The switch chops about 325 V at 150 kHz"
   assert.equal(FLYBACK.VIN, 325);
   assert.ok(Math.abs(1000 / FLYBACK.PERIOD - 150) < 1);

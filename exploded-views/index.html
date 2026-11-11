@@ -377,7 +377,7 @@
               </tr>
               <tr>
                 <th scope="row">On-state behavior</th>
-                <td>A fixed ≈ 0.7 V knee plus a small slope; V<sub>CE(sat)</sub> ≈ 1.5–2 V</td>
+                <td>A fixed ≈ 0.7 V knee plus a small slope; V<sub>CE(sat)</sub> ≈ 1.5–2 V (more for 3.3 kV and up)</td>
                 <td>A resistor, R<sub>DS(on)</sub></td>
                 <td>A resistor, R<sub>DS(on)</sub></td>
               </tr>
@@ -391,7 +391,7 @@
                 <th scope="row">Gate drive</th>
                 <td>+15 V on, 0 to −15 V off</td>
                 <td>+15 to +18 V on, −3 to −5 V off</td>
-                <td>+5 to +6 V on (max ≈ 7 V), 0 V off</td>
+                <td>+5 to +6 V on (max ≈ 6–7 V), 0 V off</td>
               </tr>
               <tr>
                 <th scope="row">Max junction temperature</th>
@@ -569,7 +569,7 @@
                 <li><b>Electro-thermal model:</b> the losses, through the package's thermal resistances (as in the Heat view), give the junction temperature over time.</li>
                 <li><b>Cycle counting:</b> rainflow counting splits that temperature history into cycles, each with a swing ΔT<sub>j</sub>, a mean or minimum and a duration.</li>
                 <li><b>Lifetime model:</b> a model fitted to power-cycling tests, such as the CIPS08 model, gives the cycles to failure for each kind of cycle.</li>
-                <li><b>Damage sum:</b> Miner's rule adds up the fraction of life each cycle uses; a sum of 1 means end of life. Monte Carlo over the scatter of the parameters turns that into a failure probability, for example the time by which 10 % have failed (B10).</li>
+                <li><b>Damage sum:</b> Miner's rule adds up the fraction of life each cycle uses; a sum of 1 means end of life. It assumes damage simply adds up, whatever the order of the cycles, which is an approximation. Monte Carlo over the scatter of the parameters turns that into a failure probability, for example the time by which 10 % have failed (B10).</li>
               </ol>
             </article>
             <article class="aside">

@@ -5,7 +5,7 @@ import { PACKAGES } from '../exploded-views/js/packages/index.js';
 import { KIND } from '../exploded-views/js/palette.js';
 import { solidsOfModel, overlaps } from './solids-helpers.js';
 import { FLYBACK } from '../exploded-views/js/apps/charger.js';
-import { PFC } from '../exploded-views/js/apps/obc.js';
+import { PFC, DCDC } from '../exploded-views/js/apps/obc.js';
 import { DRIVE } from '../exploded-views/js/apps/drive.js';
 
 for (const app of Object.values(APPS)) {
@@ -96,6 +96,35 @@ test('the charger text agrees with its waveform', () => {
   assert.ok(P > 65 && P < 80, `${P} W`);
   // "the voltage jumps to about 435 V"
   assert.equal(VIN + VR, 435);
+});
+
+test('the flyback transformer resets fully every cycle', () => {
+  // Volt-second balance: over one period the primary winding (VIN minus the
+  // switch voltage) averages to zero, or the core's flux would ratchet up.
+  const drain = APPS.gan.action.waves.panels.find((p) => /Voltage across/.test(p.title)).series[0].fn;
+  const { VIN, VR, TON, TDEMAG, PERIOD } = FLYBACK;
+  const n = 20000;
+  let sum = 0;
+  for (let i = 0; i < n; i++) sum += VIN - drain(((i + 0.5) / n) * PERIOD);
+  const avg = sum / n;
+  assert.ok(Math.abs(avg) < 0.02 * VIN, `the winding averages ${avg.toFixed(1)} V, not 0`);
+  assert.ok(Math.abs(VIN * TON - VR * TDEMAG) < 0.02 * VIN * TON, `${VIN * TON} V·µs in, ${VR * TDEMAG} V·µs out`);
+  assert.ok(TON + TDEMAG < PERIOD, 'the transformer empties before the next cycle');
+});
+
+test('the on-board charger has a half-bridge per grid phase, and its texts count the same switches', () => {
+  // A three-phase active rectifier needs one half-bridge (two switches) per phase.
+  assert.equal(PFC.switches, 2 * PFC.phases);
+  const obc = APPS.sic;
+  const bodies = obc.parts.find((p) => p.id === 'sicBodies');
+  assert.equal(bodies.solids.length, PFC.switches + DCDC.switches, 'the 3D model draws every switch');
+  const NUM = { four: 4, six: 6, eight: 8, ten: 10, twelve: 12 };
+  const count = (text) => NUM[text.match(/^(\w+) /)[1].toLowerCase()];
+  const [pfc, dcdc] = obc.chain.filter((c) => c.conv);
+  assert.equal(count(pfc.how), PFC.switches, pfc.how);
+  assert.equal(count(dcdc.how), DCDC.switches, dcdc.how);
+  assert.equal(count(bodies.name), bodies.solids.length, bodies.name);
+  assert.equal(count(obc.stats.find(([k]) => k === 'The switches')[1]), bodies.solids.length);
 });
 
 test('the on-board charger text agrees with its waveform', () => {

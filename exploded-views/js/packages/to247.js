@@ -232,7 +232,7 @@ export default {
       info: {
         facts: [
           ['Connected to', 'The source pad, through its own thin wire'],
-          ['Carries', 'Only the gate-drive current, about an amp for a few nanoseconds'],
+          ['Carries', 'Only the gate-drive current: a few amps for tens of nanoseconds at each switching edge'],
         ],
         role: `The return path for the gate driver. It measures the source right at the die, before the load current's voltage drop along the source wires and leg.`,
         why: `Without it, the voltage across the source inductance (V = L·di/dt) would subtract from the gate voltage during every fast switching edge, slowing the switch and adding loss. Fast SiC and GaN parts nearly always have one.`,
@@ -423,7 +423,7 @@ export default {
       solids: [wire(...W.gate, { loop: LOOP.gate, r: 0.04 })],
       info: {
         facts: [
-          ['Material', 'Aluminum or gold, ≈ 125 µm diameter'],
+          ['Material', 'Aluminum, ≈ 125 µm diameter'],
           ['Carries', 'Peaks of about an amp while the gate charges'],
         ],
         role: `Connects the gate pad to leg 4.`,
@@ -444,8 +444,8 @@ export default {
           ['Material', 'Epoxy resin with ≈ 80–90 % glass (silica) filler by weight, carbon black'],
           ['Process', 'Transfer molding: hot liquid epoxy is pressed around the lead frame'],
         ],
-        role: `Seals the die and wires against moisture and dirt, holds the legs in place, and insulates them from each other.`,
-        why: `The filler makes it expand with temperature at nearly the same rate as the copper and die, so heating does not crack the wires or peel the package apart. It conducts heat poorly, so almost no heat leaves through the top.`,
+        role: `Protects the die and wires from dirt and handling, holds the legs in place, and insulates them from each other. It slows moisture down but does not stop it: water vapor slowly diffuses through epoxy.`,
+        why: `Silica filler makes it expand far less than plain epoxy, between the copper and the die, so heating strains the wires and the interfaces less and the package does not peel apart. It conducts heat poorly, so almost no heat leaves through the top.`,
         look: `The black plastic body with the part number laser-marked on it.`,
       },
     },
