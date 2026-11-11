@@ -7,6 +7,7 @@ import { PACKAGES } from '../exploded-views/js/packages/index.js';
 import { APPS } from '../exploded-views/js/apps/index.js';
 import { FLYBACK } from '../exploded-views/js/apps/charger.js';
 import { DRIVE } from '../exploded-views/js/apps/drive.js';
+import { FAILURES } from '../exploded-views/js/failures.js';
 import { blockingResult } from '../exploded-views/js/physics.js';
 import { thermalStack } from '../exploded-views/js/thermal.js';
 
@@ -131,4 +132,26 @@ test('the converter steps agree with the product chains', () => {
   for (const [, id] of TOUR.flatMap((s) => [...s.body.matchAll(/href="#([\w-]+)"/g)])) {
     assert.match(html, new RegExp(`id="${id}"`), `the tour links to #${id}, which is missing`);
   }
+});
+
+test('the tour ends with failure modes and then the outlook, back at the first cell', () => {
+  const chapters = [...new Set(TOUR.map((s) => s.chapter))];
+  assert.deepEqual(chapters.slice(-2), ['fail', 'outlook']);
+  const last = TOUR.at(-1);
+  assert.deepEqual([last.device, last.scale, last.mode], [TOUR[0].device, TOUR[0].scale, TOUR[0].mode]);
+});
+
+test('the failure-modes chapter highlights parts that can fail', () => {
+  const steps = TOUR.filter((s) => s.chapter === 'fail');
+  for (const st of steps.filter((s) => s.focus)) {
+    const modes = FAILURES.filter((f) => f.parts.some(([d, sc, id]) => d === st.device && sc === st.scale && id === st.focus));
+    assert.ok(modes.length, `"${st.title}" highlights ${st.focus}, which no failure mode lists`);
+  }
+  // "all fourteen mechanisms"
+  assert.match(steps.at(-1).body, /fourteen/);
+  assert.equal(FAILURES.length, 14);
+  // "a 1200 V device typically runs at 800 V or less", and the step shows it at 800 V.
+  const cosmic = steps.find((s) => s.focus === 'drift');
+  assert.equal(cosmic.block.V, 800);
+  assert.equal(DEVICES[cosmic.device].blocking.Vrated, 1200);
 });

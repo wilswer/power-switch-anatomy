@@ -15,8 +15,9 @@ pull the layers apart, and click any part to read what it is and why it matters.
   1D abrupt-junction model for the vertical devices and an illustrative shape for GaN.
 
 A **guided tour** (masthead button or Tour in the toolbar) walks through all three devices in
-31 steps, with chapters on their packages, on what converters do, and on the products they
-work in: it sets the
+45 steps, with chapters on their packages, on what converters do, on the products they work
+in, on how they fail (highlighting the parts that wear out), and an outlook on where power
+electronics is heading and its open questions: it sets the
 device, scale, mode and camera,
 highlights the part being discussed and sweeps the blocking voltage or the power loss. Arrow
 keys step, Esc exits, and leaving midway lets you resume.

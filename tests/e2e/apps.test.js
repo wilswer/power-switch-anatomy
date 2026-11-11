@@ -130,8 +130,8 @@ test('the tour explains converters, then visits each product at work', async () 
   for (let n = 1; n <= steps; n++) {
     await t.goTo(n);
     const s = await t.state();
-    const kicker = await t.page.textContent('#tour-kicker');
-    if (s.scale === 'app') seen.push(`${kicker.split(' · ')[1]}: ${s.device}/${s.mode}`);
+    const chapter = (await t.page.textContent('#tour-kicker')).split(' · ')[1];
+    if (s.scale === 'app' && ['Converters', 'At work'].includes(chapter)) seen.push(`${chapter}: ${s.device}/${s.mode}`);
   }
   assert.deepEqual(seen, [
     'Converters: gan/explore',
