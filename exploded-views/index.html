@@ -15,8 +15,8 @@
     <script type="importmap">
       {
         "imports": {
-          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+          "three": "./vendor/three/three.module.min.js",
+          "three/addons/": "./vendor/three/addons/"
         }
       }
     </script>
@@ -75,6 +75,9 @@
             <div id="labels"></div>
           </div>
           <p class="hint">Drag to rotate · scroll to zoom · click any part</p>
+          <div class="sel-chip" id="sel-chip" hidden>
+            <span class="sel-name"></span><button type="button" class="ghost">Details ↓</button>
+          </div>
           <div class="legend" id="legend"></div>
           <div class="titleblock" id="titleblock"></div>
           <p class="loading" id="loading">Loading the 3D viewer…</p>
@@ -83,10 +86,13 @@
           <div class="tour-progress" id="tour-progress"></div>
           <div class="tour-body">
             <div class="tour-text">
-              <div class="tour-live" aria-live="polite">
-                <p class="kicker" id="tour-kicker"></p>
-                <h3 id="tour-title"></h3>
-                <p class="tour-para" id="tour-text"></p>
+              <div class="tour-live">
+                <div aria-live="polite">
+                  <p class="kicker" id="tour-kicker"></p>
+                  <h3 id="tour-title"></h3>
+                  <p class="tour-para" id="tour-text"></p>
+                </div>
+                <!-- Outside the live region: during a sweep it changes many times a second. -->
                 <p class="tour-readout" id="tour-readout" hidden></p>
               </div>
               <!-- Invisible copies of every step, stacked: the card takes the height of the longest. -->
@@ -116,7 +122,7 @@
       </section>
 
       <aside class="panel" aria-label="Details">
-        <section id="mode-card" aria-live="polite"></section>
+        <section id="mode-card"></section>
         <section id="part-card" aria-live="polite"></section>
         <section id="parts-list"></section>
       </aside>

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { KIND } from './palette.js';
 import { DEPTH, GAP } from './constants.js';
+import { reducedMotion, onMotionChange } from './motion.js';
 
 // The 3D view of one model: a device cell or a package. Builds the parts,
 // explodes their groups apart, handles hover/click picking, and draws callout
@@ -11,7 +12,9 @@ import { DEPTH, GAP } from './constants.js';
 // DEPTH into the screen) or from `solids` (packages: boxes, slabs and bond
 // wires in full 3D, see packages/solids.js).
 
-const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+// On a phone, a vertical swipe over the model scrolls the page instead of
+// turning the model (OrbitControls would otherwise claim every touch).
+const narrowScreen = window.matchMedia('(max-width: 720px)');
 const VIEW_DIR = new THREE.Vector3(0.95, 0.62, 1.45).normalize();
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -65,8 +68,9 @@ function cssColor(name, fallback) {
 }
 
 export class Viewer {
-  constructor({ viewport, canvas, labelsEl, leadersEl, onSelect, reservedBottom }) {
+  constructor({ viewport, canvas, labelsEl, leadersEl, onSelect, reservedTop, reservedBottom }) {
     this.viewport = viewport;
+    this.reservedTop = reservedTop ?? (() => 0);
     this.reservedBottom = reservedBottom ?? (() => 0);
     this.canvas = canvas;
     this.labelsEl = labelsEl;
@@ -79,7 +83,7 @@ export class Viewer {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(30, 1, 0.1, 1000);
     this.controls = new OrbitControls(this.camera, canvas);
-    this.controls.enableDamping = !reduceMotion;
+    this.controls.enableDamping = !reducedMotion();
     this.controls.dampingFactor = 0.08;
     this.controls.enablePan = false;
     this.controls.rotateSpeed = 0.7;
@@ -140,7 +144,26 @@ export class Viewer {
     document.fonts?.ready.then(() => {
       for (const p of this.parts.values()) p.lw = 0; // re-measure labels once fonts load
     });
-    this.renderer.setAnimationLoop(() => this._frame());
+    onMotionChange(() => {
+      this.controls.enableDamping = !reducedMotion();
+      if (reducedMotion()) this.explode = this.explodeTarget;
+    });
+    const setTouch = () => (canvas.style.touchAction = narrowScreen.matches ? 'pan-y' : 'none');
+    setTouch();
+    narrowScreen.addEventListener('change', setTouch);
+
+    // Draw only while the view is on screen; scrolled away, the page idles.
+    this._running = false;
+    this._run(true);
+    // Several changes can arrive in one batch; the last entry is the current one.
+    new IntersectionObserver((entries) => this._run(entries.at(-1).isIntersecting)).observe(viewport);
+  }
+
+  _run(on) {
+    if (on === this._running) return;
+    this._running = on;
+    if (on) this.clock.getDelta(); // don't count the time spent off screen
+    this.renderer.setAnimationLoop(on ? () => this._frame() : null);
   }
 
   // ---------- device ----------
@@ -228,7 +251,7 @@ export class Viewer {
         });
         labelEl.addEventListener('pointerenter', () => this.setHover(def.id));
         labelEl.addEventListener('pointerleave', () => this.setHover(null));
-        this.labelsEl.appendChild(labelEl);
+        this.labelsEl.prepend(labelEl); // parts run bottom to top: tab order follows the drawing
       }
 
       this.model.add(group);
@@ -269,7 +292,7 @@ export class Viewer {
     this.mode = mode;
     const { explode } = this.look();
     this.explodeTarget = explode === 'user' ? this.userExplode : explode;
-    if (reduceMotion) this.explode = this.explodeTarget;
+    if (reducedMotion()) this.explode = this.explodeTarget;
     this._updateGuides();
     this.applyLook();
   }
@@ -277,7 +300,7 @@ export class Viewer {
   setExplode(value) {
     this.userExplode = value;
     if (this.look().explode === 'user') this.explodeTarget = value;
-    if (reduceMotion) this.explode = this.explodeTarget;
+    if (reducedMotion()) this.explode = this.explodeTarget;
   }
 
   // Override part colors, e.g. by temperature: a Map of part id → THREE.Color.
@@ -335,7 +358,7 @@ export class Viewer {
       zoomFrom: from.radius / this._fitDistance(this.explode),
       zoomTo: zoom,
       t: 0,
-      seconds: reduceMotion ? 0 : seconds,
+      seconds: reducedMotion() ? 0 : seconds,
     };
   }
 
@@ -520,7 +543,7 @@ export class Viewer {
     const dt = Math.min(this.clock.getDelta(), 0.1);
     const prevE = this.explode;
     if (this.explode !== this.explodeTarget) {
-      const k = reduceMotion ? 1 : 1 - Math.exp(-dt * 6);
+      const k = reducedMotion() ? 1 : 1 - Math.exp(-dt * 6);
       this.explode += (this.explodeTarget - this.explode) * k;
       if (Math.abs(this.explodeTarget - this.explode) < 5e-4) this.explode = this.explodeTarget;
     }
@@ -586,7 +609,7 @@ export class Viewer {
 
     // Anchor on whichever cross-section face points toward the camera.
     const zFace = (this.camera.position.z >= this.controls.target.z ? 1 : -1) * (DEPTH / 2);
-    const items = [];
+    let items = [];
     let maxW = 0;
     for (const p of this.parts.values()) {
       if (!p.labelEl || p.labelEl.hidden) continue;
@@ -605,28 +628,43 @@ export class Viewer {
       maxW = Math.max(maxW, p.lw);
     }
 
+    // A column right of the model, else left of it; with no room on either
+    // side (a phone), a column along the right edge, over the model.
     let side = 'right';
     let colX = maxX + 28;
     if (colX + maxW > w - 8) {
       side = 'left';
       colX = minX - 28;
-      if (colX - maxW < 8) side = 'none';
-    }
-    if (side === 'none') {
-      for (const { p } of items) p.labelEl.style.visibility = 'hidden';
-      return clear();
+      if (colX - maxW < 8) {
+        side = 'right';
+        colX = Math.max(8, w - 8 - maxW);
+      }
     }
 
-    // Stack labels in screen order, at least `step` px apart, inside the viewport.
+    // Stack labels in screen order, at least `step` px apart, inside the
+    // viewport. If there are more than fit, keep the selected and hovered
+    // labels and an even spread of the others.
     items.sort((a, b) => a.sy - b.sy);
     const step = 22;
+    const top = 14 + this.reservedTop();
+    const bottom = h - 14 - this.reservedBottom();
+    const slots = Math.max(1, Math.floor((bottom - top) / step) + 1);
+    if (items.length > slots) {
+      const isKey = (it) => it.p.def.id === this.selected || it.p.def.id === this.hovered;
+      const keep = new Set(items.filter(isKey).slice(0, slots));
+      const rest = items.filter((it) => !keep.has(it));
+      const n = slots - keep.size;
+      for (let i = 0; i < n; i++) keep.add(rest[n === 1 ? rest.length >> 1 : Math.round((i * (rest.length - 1)) / (n - 1))]);
+      for (const it of items) if (!keep.has(it)) it.p.labelEl.style.visibility = 'hidden';
+      items = items.filter((it) => keep.has(it));
+    }
     let prev = -Infinity;
     for (const it of items) {
-      it.y = Math.max(it.sy, prev + step, 14);
+      it.y = Math.max(it.sy, prev + step, top);
       prev = it.y;
     }
     for (let i = items.length - 1; i >= 0; i--) {
-      const cap = i === items.length - 1 ? h - 14 - this.reservedBottom() : items[i + 1].y - step;
+      const cap = i === items.length - 1 ? bottom : items[i + 1].y - step;
       items[i].y = Math.min(items[i].y, cap);
     }
 

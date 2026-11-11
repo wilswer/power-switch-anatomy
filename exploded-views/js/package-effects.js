@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CURRENT, GATE_CURRENT, thermalColorRGB } from './palette.js';
+import { reducedMotion } from './motion.js';
 
 // Overlays for the package and product models: moving dots for the current
 // paths (a package's Current mode, a product's In action mode), temperature
@@ -100,6 +101,7 @@ export class PackageEffects {
 
   _buildFlows() {
     this.root.traverse((o) => {
+      if (o.isInstancedMesh) o.dispose(); // frees its instance buffer
       o.geometry?.dispose();
       o.material?.dispose();
     });
@@ -132,14 +134,15 @@ export class PackageEffects {
     }
   }
 
-  // Switches flash (on/off, slowed down) and motors and fans turn.
-  _animateProduct(dt) {
-    const on = Math.sin(this.time * 2 * Math.PI * 2.5) > 0;
+  // Switches flash (on/off, slowed down) and motors and fans turn. With
+  // reduced motion the switches glow steadily and nothing turns.
+  _animateProduct(dt, still) {
+    const on = still || Math.sin(this.time * 2 * Math.PI * 2.5) > 0;
     for (const id of this.flow.pulse ?? []) {
       const m = this.viewer.parts.get(id)?.material;
       if (!m) continue;
       m.emissive.set(on ? CURRENT : '#000000');
-      m.emissiveIntensity = on ? 0.55 : 0;
+      m.emissiveIntensity = on ? (still ? 0.3 : 0.55) : 0;
     }
     for (const [id, rate] of Object.entries(this.flow.spin ?? {})) {
       const part = this.viewer.parts.get(id);
@@ -152,7 +155,9 @@ export class PackageEffects {
   }
 
   update(dt, explode) {
-    this.time += dt;
+    const still = reducedMotion();
+    const move = still ? 0 : dt; // with reduced motion the dots stand still
+    this.time += move;
     const fade = clamp01(1 - explode * 6);
     const active = Boolean(this.flow) && this.mode === this.flowMode;
     const show = active && fade > 0;
@@ -162,7 +167,7 @@ export class PackageEffects {
       f.mat.opacity = 0.95 * fade;
       for (let i = 0; i < f.ps.length; i++) {
         let q = f.ps[i];
-        q.s += (dt * SPEED * f.speed * q.k) / q.path.total;
+        q.s += (move * SPEED * f.speed * q.k) / q.path.total;
         if (q.s >= 1) q = f.ps[i] = this._spawn(q.path, q.s % 1);
         const v = samplePath(q.path, q.s, this._p);
         const grow = Math.min(1, q.s / 0.03, (1 - q.s) / 0.03);
@@ -174,12 +179,12 @@ export class PackageEffects {
       f.mesh.instanceMatrix.needsUpdate = true;
     }
 
-    if (active) this._animateProduct(dt);
+    if (active) this._animateProduct(move, still);
 
     // Past the temperature limit, the die layers pulse toward white.
     const h = this.heat;
     if (h?.hot && this.mode === 'heat') {
-      const pulse = 0.5 + 0.5 * Math.sin(this.time * 7);
+      const pulse = still ? 0.5 : 0.5 + 0.5 * Math.sin(this.time * 7);
       for (const id of h.result.layers[0].parts) {
         const part = this.viewer.parts.get(id);
         const base = h.tints.get(id);

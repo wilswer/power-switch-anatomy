@@ -86,8 +86,9 @@ The server binds to localhost only. To view it from another machine, forward the
 SSH, for example `ssh -N -L 8642:127.0.0.1:8642 you@your-server`, then open
 http://localhost:8642/.
 
-The page loads three.js 0.160.0 and IBM Plex fonts from public CDNs, so the browser needs an
-internet connection.
+three.js 0.160.0 (MIT license) is included in `exploded-views/vendor/three/`, so the page works
+offline. Only the IBM Plex fonts come from Google Fonts; without a connection the browser uses
+its own fonts.
 
 ### Layout
 
@@ -107,8 +108,10 @@ internet connection.
 | `exploded-views/js/main.js` | Panel, controls, state |
 | `exploded-views/js/tour.js` | The tour's steps (pure data) |
 | `exploded-views/js/tour-player.js` | Plays the tour: step card, navigation, voltage sweeps |
+| `exploded-views/js/motion.js` | The live reduced-motion setting every animation follows |
+| `exploded-views/vendor/three/` | three.js 0.160.0 and its OrbitControls, unchanged, with their license |
 | `tests/` | `node --test` suites for the physics, heat model, geometry, packages, products and tour data |
-| `tests/e2e/` | Browser tests of the tour, the package views and the product views (Playwright, headless Chromium) |
+| `tests/e2e/` | Browser tests of the cell, package and product views, the viewer and the tour (Playwright, headless Chromium) |
 
 ### Tests
 
@@ -134,7 +137,10 @@ tour and package texts quote match the models. The browser tests cover how the t
 when the user interrupts it, keyboard, focus and reduced motion, and the package views:
 scale switching, links, the heat slider and chart, the module's switching states, and
 layouts with no sideways scrolling, and the products: power flow, flashing switches, the
-turning motor, the waveform chart, and a tour card that keeps its size on every step.
+turning motor, the waveform chart, and a tour card that keeps its size on every step. They
+also check that labels stay inside the 3D view, that a phone names the tapped part, that the
+page works offline, that links restore the mode, and that animations stop with reduced
+motion and drawing stops off screen. CI runs both suites before every deploy.
 
 ## License
 

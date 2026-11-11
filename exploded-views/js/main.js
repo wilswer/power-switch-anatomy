@@ -20,6 +20,7 @@ import { Effects } from './effects.js';
 import { PackageEffects } from './package-effects.js';
 import { createTourPlayer } from './tour-player.js';
 import { FAILURES, FAILURE_GROUPS } from './failures.js';
+import { reducedMotion as reduceMotion } from './motion.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 
@@ -82,6 +83,8 @@ const els = {
   loading: $('#loading'),
   tourStarts: [...document.querySelectorAll('[data-tour-start]')],
   tourReadout: $('#tour-readout'),
+  tourCard: $('#tour-card'),
+  chip: $('#sel-chip'),
 };
 
 const device = () => DEVICES[state.device];
@@ -91,17 +94,25 @@ const model = () => MODELS[state.scale][state.device];
 const partById = (id) => model().parts.find((p) => p.id === id);
 const modeName = (mode) => Object.values(MODES).flat().find(([m]) => m === mode)?.[1] ?? mode;
 const fmtField = (E) => `${(E / 1e6).toFixed(2)} MV/cm`;
-const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Below this width the panel sits under the 3D view instead of beside it.
+const singleColumn = matchMedia('(max-width: 1080px)');
 
 // ---------- state changes ----------
 
+// The link holds the view: #device[/scale][/mode], leaving out the cell
+// scale and Explore, e.g. #sic, #gan/block, #igbt/package/heat.
 function writeHash() {
-  history.replaceState(null, '', `#${state.device}${state.scale === 'cell' ? '' : `/${state.scale}`}`);
+  const scale = state.scale === 'cell' ? '' : `/${state.scale}`;
+  const mode = state.mode === 'explore' ? '' : `/${state.mode}`;
+  history.replaceState(null, '', `#${state.device}${scale}${mode}`);
 }
 
 function parseHash() {
-  const [id, scale] = location.hash.slice(1).split('/');
-  return { id, scale: MODELS[scale]?.[id] ? scale : 'cell' };
+  const [id, a, b] = location.hash.slice(1).split('/');
+  const named = Boolean(MODELS[a]);
+  const scale = named && MODELS[a][id] ? a : 'cell';
+  const mode = named ? b : a;
+  return { id, scale, mode: MODES[scale].some(([m]) => m === mode) ? mode : 'explore' };
 }
 
 // Build the model for the current device and scale.
@@ -128,7 +139,7 @@ function loadModel() {
   renderAll();
 }
 
-function setDevice(id, { fromHash = false, scale = state.scale } = {}) {
+function setDevice(id, { fromHash = false, scale = state.scale, mode } = {}) {
   if (!DEVICES[id]) return;
   state.device = id;
   if (!MODELS[scale]?.[id]) scale = 'cell';
@@ -136,6 +147,7 @@ function setDevice(id, { fromHash = false, scale = state.scale } = {}) {
     state.mode = state.mode === CONDUCTING[state.scale] ? CONDUCTING[scale] : 'explore';
     state.scale = scale;
   }
+  if (mode) state.mode = MODES[scale].some(([m]) => m === mode) ? mode : 'explore';
   if (!fromHash) writeHash();
   loadModel();
 }
@@ -149,6 +161,7 @@ function setMode(mode) {
   if (!MODES[state.scale].some(([m]) => m === mode)) mode = 'explore';
   tour?.stopSweep();
   state.mode = mode;
+  writeHash();
   renderModeButtons();
   const sel = state.selected && partById(state.selected);
   if (sel?.onlyIn && !sel.onlyIn.includes(mode)) state.selected = null;
@@ -160,11 +173,34 @@ function setMode(mode) {
 }
 
 function select(id) {
+  showIfHidden(id);
   state.selected = id;
   viewer?.select(id);
   renderPartCard();
   markListSelection();
   revealPartCard();
+  renderChip();
+}
+
+// Picking the field plate while Blocking has it switched off switches it back
+// on, rather than selecting a part that is not drawn.
+function showIfHidden(id) {
+  if (!id || state.scale !== 'cell' || state.mode !== 'block') return;
+  const b = device().blocking;
+  const s = state.block[state.device];
+  if (b.fieldPlatePart !== id || s.fieldPlate) return;
+  s.fieldPlate = true;
+  const box = $('#fieldplate');
+  if (box) box.checked = true;
+  updateBlocking();
+}
+
+// When the panel sits below the 3D view (narrow screens), name the selected
+// part in the view itself, with a button down to its details.
+function renderChip() {
+  const p = state.selected && singleColumn.matches && partById(state.selected);
+  els.chip.hidden = !p;
+  if (p) $('.sel-name', els.chip).innerHTML = p.name ?? p.label;
 }
 
 // In the two-column layout the panel scrolls on its own; bring the part card to its top.
@@ -175,6 +211,27 @@ function revealPartCard() {
 }
 
 // ---------- tour ----------
+
+// Tour steps set voltages, power levels and switching states for their
+// scenes. The user's own settings are put back when the tour ends.
+let userSettings = null;
+function saveUserSettings() {
+  userSettings = structuredClone({ block: state.block, heat: state.heat, phase: state.phase });
+}
+function restoreUserSettings() {
+  if (!userSettings) return;
+  for (const key of ['block', 'heat', 'phase']) Object.assign(state[key], userSettings[key]);
+  userSettings = null;
+  if (state.scale === 'package') pkgEffects?.setPhase(state.phase[state.device]);
+  renderAll();
+}
+
+// The tour's keys only act while its card is at least partly on screen.
+function tourInView() {
+  if (!tour?.isActive()) return false;
+  const r = els.tourCard.getBoundingClientRect();
+  return r.bottom > 0 && r.top < innerHeight;
+}
 
 // Put the page into the scene a tour step describes (see tour.js).
 function applyTourStep(st) {
@@ -277,6 +334,7 @@ function renderAll() {
   renderLegend();
   renderTitleblock();
   syncHiddenParts();
+  renderChip();
   els.tourReadout.hidden = state.mode !== 'block' && state.mode !== 'heat';
 }
 
@@ -815,17 +873,21 @@ function wireUI() {
   });
   els.partsList.addEventListener('pointerleave', () => viewer?.setHover(null));
 
+  // A link to another view ends the tour; links to sections of the page
+  // (#failures, #fm-…) leave the view and the tour alone.
   window.addEventListener('hashchange', () => {
-    const { id, scale } = parseHash();
-    setDevice(id, { fromHash: true, scale });
+    const { id, scale, mode } = parseHash();
+    if (!DEVICES[id]) return;
+    if (tour?.isActive()) tour.stop();
+    setDevice(id, { fromHash: true, scale, mode });
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-      if (tour?.isActive()) tour.stop();
+      if (tourInView()) tour.stop();
       else if (state.selected) select(null);
       return;
     }
-    if (!tour?.isActive() || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
+    if (!tourInView() || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return;
     if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return; // e.g. Alt+← is browser Back
     if (e.target instanceof Element && e.target.closest('input, select, textarea, [contenteditable], .device-tabs')) return;
     e.preventDefault();
@@ -858,6 +920,8 @@ function boot() {
     },
     applyStep: applyTourStep,
     setLevel: setSweepLevel,
+    onStart: saveUserSettings,
+    onStop: restoreUserSettings,
     onChange: updateTourButtons,
   });
   renderFailures();
@@ -866,7 +930,12 @@ function boot() {
   if (DEVICES[fromHash.id]) {
     state.device = fromHash.id;
     state.scale = fromHash.scale;
+    state.mode = fromHash.mode;
   }
+  $('button', els.chip).addEventListener('click', () => {
+    els.partCard.scrollIntoView({ block: 'start', behavior: reduceMotion() ? 'auto' : 'smooth' });
+  });
+  singleColumn.addEventListener('change', renderChip);
   if (window.innerWidth < 720) {
     state.labels = false;
     els.labels.checked = false;
@@ -882,7 +951,9 @@ function boot() {
         renderPartCard();
         markListSelection();
         revealPartCard();
+        renderChip();
       },
+      reservedTop: () => (els.chip.hidden ? 0 : els.chip.offsetTop + els.chip.offsetHeight),
       reservedBottom: () => (els.titleblock.offsetHeight ? els.titleblock.offsetHeight + 16 : 0),
     });
     effects = new Effects(viewer);

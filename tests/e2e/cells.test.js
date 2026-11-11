@@ -35,3 +35,15 @@ test('past the critical field, silicon and SiC avalanche but a GaN HEMT simply b
   assert.deepEqual(t.errors, []);
   await t.close();
 });
+
+test('picking the switched-off field plate from the list brings it back', async () => {
+  const t = await open({ hash: 'gan' });
+  await t.page.click('[data-mode="block"]');
+  await t.page.uncheck('#fieldplate');
+  await t.page.click('[data-part="fieldplate"]');
+  assert.equal((await t.state()).selected, 'fieldplate');
+  assert.equal(await t.page.evaluate(() => window.__pageDebug.viewer.parts.get('fieldplate').group.visible), true);
+  assert.equal(await t.page.isChecked('#fieldplate'), true, 'the checkbox agrees');
+  assert.deepEqual(t.errors, []);
+  await t.close();
+});

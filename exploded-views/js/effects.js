@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { ELECTRON, HOLE, KIND, fieldColorRGB } from './palette.js';
 import { DEPTH } from './constants.js';
+import { reducedMotion } from './motion.js';
 
 // Mode overlays drawn in the assembled position: moving carriers for Gate ON,
 // and electric-field slices for Blocking. They fade in once the stack has
@@ -58,6 +59,7 @@ export class Effects {
 
   setDevice(device) {
     this.root.traverse((o) => {
+      if (o.isInstancedMesh) o.dispose(); // frees its instance buffer
       o.geometry?.dispose();
       o.material?.dispose();
     });
@@ -193,7 +195,11 @@ export class Effects {
   }
 
   update(dt, explode) {
-    this.time += dt;
+    // With reduced motion the carriers stand still along their paths and the
+    // breakdown glow holds steady.
+    const still = reducedMotion();
+    const move = still ? 0 : dt;
+    this.time += move;
     const fade = this.mode === 'explore' ? 0 : clamp01(1 - explode * 6);
 
     const showOn = this.mode === 'on' && fade > 0;
@@ -203,7 +209,7 @@ export class Effects {
       f.mat.opacity = 0.95 * fade;
       for (let i = 0; i < f.ps.length; i++) {
         let q = f.ps[i];
-        q.s += (dt * SPEED * f.speed * q.k) / q.path.total;
+        q.s += (move * SPEED * f.speed * q.k) / q.path.total;
         if (q.s >= 1) q = f.ps[i] = this._spawn(q.path, q.s % 1);
         const v = samplePath(q.path, q.s, this._p);
         const grow = Math.min(1, q.s / 0.04, (1 - q.s) / 0.04);
@@ -217,7 +223,7 @@ export class Effects {
 
     const showBlock = this.mode === 'block' && fade > 0;
     const breakdown = this.result && this.result.Epk >= this.result.Ec;
-    const pulse = 0.5 + 0.5 * Math.sin(this.time * 9);
+    const pulse = still ? 0.5 : 0.5 + 0.5 * Math.sin(this.time * 9);
     for (const s of this.slices) {
       s.mesh.visible = showBlock && s.alpha > 0;
       if (!s.mesh.visible) continue;

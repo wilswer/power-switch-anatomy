@@ -1,16 +1,17 @@
 import { TOUR, CHAPTERS } from './tour.js';
+import { reducedMotion } from './motion.js';
 
 // Plays the guided tour: shows the step card, steps back and forth, and runs
 // sweeps (of the blocking voltage or the power loss). Setting up each scene is
 // delegated to `applyStep`, and a sweep drives the page through
-// `setLevel(step, value)`, so this module owns no page state. `onChange` fires
+// `setLevel(step, value)`, so this module owns no page state. `onStart` fires
+// before the first step is set up, `onStop` when the tour ends, and `onChange`
 // whenever the tour starts, stops or moves.
 
-const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const REDUCED_STAGES = 4; // with reduced motion, sweeps jump in this many steps
 const REDUCED_STAGE_MS = 1100;
 
-export function createTourPlayer({ els, applyStep, setLevel, onChange }) {
+export function createTourPlayer({ els, applyStep, setLevel, onStart, onStop, onChange }) {
   let index = -1; // -1 = not touring
   let resumeAt = 0;
   let sweepFrame = 0;
@@ -49,7 +50,7 @@ export function createTourPlayer({ els, applyStep, setLevel, onChange }) {
     stopSweep();
     const { from, to, seconds, step = 10 } = st.sweep;
     const at = (k) => Math.round((from + (to - from) * k) / step) * step;
-    if (reduceMotion) {
+    if (reducedMotion()) {
       let stage = 0;
       setLevel(st, from);
       const nextStage = () => {
@@ -101,7 +102,7 @@ export function createTourPlayer({ els, applyStep, setLevel, onChange }) {
 
   // Scroll the page just enough to show the whole card.
   function reveal() {
-    els.card.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+    els.card.scrollIntoView({ block: 'nearest', behavior: reducedMotion() ? 'auto' : 'smooth' });
   }
 
   function start({ from = null } = {}) {
@@ -112,6 +113,7 @@ export function createTourPlayer({ els, applyStep, setLevel, onChange }) {
     opener = from;
     els.card.hidden = false;
     document.body.classList.add('is-touring');
+    onStart?.();
     go(resumeAt);
     els.next.focus({ preventScroll: true });
     reveal();
@@ -124,6 +126,7 @@ export function createTourPlayer({ els, applyStep, setLevel, onChange }) {
     index = -1;
     els.card.hidden = true;
     document.body.classList.remove('is-touring');
+    onStop?.();
     if (opener?.isConnected) opener.focus({ preventScroll: true });
     opener = null;
     onChange?.();

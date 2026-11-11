@@ -3,6 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { open, wait } from './harness.js';
+import { TOUR } from '../../exploded-views/js/tour.js';
 
 test('a voltage sweep never drives another device', async () => {
   const t = await open();
@@ -216,4 +217,47 @@ test('the tour card keeps one size, so Next and Back never move between steps', 
     }
     await t.close();
   }
+});
+
+test('the tour hands back the settings it changed, so no hidden part can be picked afterward', async () => {
+  const t = await open({ hash: 'gan' });
+  const before = (await t.state()).block.gan;
+  await t.page.click('.cta');
+  const plateOff = TOUR.findIndex((s) => s.block?.fieldPlate === false) + 1;
+  await t.goTo(plateOff);
+  assert.equal((await t.state()).block.gan.fieldPlate, false);
+  await t.page.click('#tour-exit');
+  assert.deepEqual((await t.state()).block.gan, before, 'the user’s own GaN settings are back');
+  await t.page.click('#fm-gan-dynamic [data-fm-show]');
+  const s = await t.state();
+  assert.equal(s.selected, 'fieldplate');
+  assert.equal(await t.page.evaluate(() => window.__pageDebug.viewer.parts.get('fieldplate').group.visible), true);
+  await t.close();
+});
+
+test('arrow keys and Escape leave the tour alone while its card is out of sight', async () => {
+  const t = await open();
+  await t.page.click('.cta');
+  await t.goTo(5);
+  await t.page.evaluate(() => scrollTo(0, document.body.scrollHeight));
+  await wait(300);
+  await t.page.keyboard.press('ArrowRight');
+  assert.equal(await t.step(), 4, 'ArrowRight did nothing');
+  await t.page.keyboard.press('Escape');
+  assert.equal(await t.active(), true, 'Escape did not end the tour');
+  await t.page.click('.cta'); // back to the tour
+  await wait(500);
+  await t.page.keyboard.press('ArrowRight');
+  assert.equal(await t.step(), 5, 'in view, ArrowRight steps on');
+  await t.close();
+});
+
+test('opening another view by its link ends the tour', async () => {
+  const t = await open();
+  await t.page.click('.cta');
+  await t.page.evaluate(() => (location.hash = '#gan/app'));
+  await t.page.waitForFunction(() => window.__pageDebug.state.device === 'gan');
+  assert.equal(await t.active(), false);
+  assert.equal(await t.page.isHidden('#tour-card'), true);
+  await t.close();
 });

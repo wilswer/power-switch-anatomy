@@ -1,6 +1,6 @@
 # Publish the page (exploded-views/) to GitHub Pages on every push to main,
-# after the unit tests pass. The browser tests need a WebGL-capable browser
-# and run locally (npm run test:e2e).
+# after the unit tests and the browser tests pass. The browser tests run
+# headless Chromium with software WebGL (SwiftShader), see tests/e2e/harness.js.
 name: Pages
 
 on:
@@ -27,8 +27,19 @@ jobs:
           node-version: 22
       - run: npm test
 
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+
   deploy:
-    needs: test
+    needs: [test, e2e]
     runs-on: ubuntu-latest
     environment:
       name: github-pages

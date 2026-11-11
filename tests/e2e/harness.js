@@ -35,11 +35,19 @@ after(async () => {
   server?.kill();
 });
 
-export async function open({ viewport = { width: 1280, height: 720 }, reducedMotion = 'no-preference', hash = 'sic' } = {}) {
+// `offline` blocks every request that leaves the test server, as if the
+// network (or a CDN) were down.
+export async function open({
+  viewport = { width: 1280, height: 720 },
+  reducedMotion = 'no-preference',
+  hash = 'sic',
+  offline = false,
+} = {}) {
   const ctx = await browser.newContext({ viewport, reducedMotion });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
+  if (offline) await page.route((url) => !url.href.startsWith(base), (route) => route.abort());
   await page.goto(`${base}#${hash}`);
   await page.waitForFunction(() => window.__pageDebug?.viewer);
   return {
