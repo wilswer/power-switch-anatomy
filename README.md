@@ -71,17 +71,20 @@ in the 3D views list the failure modes of that part.
 
 ### Run it
 
+Online: **https://wilswer.github.io/power-switch-anatomy/**, published from `main` by GitHub
+Actions (`.github/workflows/pages.yml`, which runs the unit tests first).
+
+Locally, it is a static site; any web server works. The included one:
+
 ```bash
 ./serve.sh start      # http://127.0.0.1:8642/, detached; PID and log in .run/
 ./serve.sh status
 ./serve.sh stop
 ```
 
-The server binds to localhost only. To view it from another machine, forward the port:
-
-```bash
-ssh -N -L 8642:127.0.0.1:8642 wsoverm@gpuserver   # then open http://localhost:8642/
-```
+The server binds to localhost only. To view it from another machine, forward the port over
+SSH, for example `ssh -N -L 8642:127.0.0.1:8642 you@your-server`, then open
+http://localhost:8642/.
 
 The page loads three.js 0.160.0 and IBM Plex fonts from public CDNs, so the browser needs an
 internet connection.
