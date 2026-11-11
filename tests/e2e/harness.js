@@ -36,14 +36,15 @@ after(async () => {
 });
 
 // `offline` blocks every request that leaves the test server, as if the
-// network (or a CDN) were down.
+// network (or a CDN) were down; `touch` gives the page a touchscreen.
 export async function open({
   viewport = { width: 1280, height: 720 },
   reducedMotion = 'no-preference',
   hash = 'sic',
   offline = false,
+  touch = false,
 } = {}) {
-  const ctx = await browser.newContext({ viewport, reducedMotion });
+  const ctx = await browser.newContext({ viewport, reducedMotion, hasTouch: touch });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));

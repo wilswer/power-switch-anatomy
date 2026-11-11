@@ -49,7 +49,6 @@ test('on a 720p laptop the tour never pushes labels out of the view, and keeps t
 
 test('on a phone, a tapped part shows its name in the view, and Labels shows labels', async () => {
   const t = await open({ viewport: { width: 390, height: 844 } });
-  assert.equal(await t.page.$eval('#scene', (c) => getComputedStyle(c).touchAction), 'pan-y', 'vertical swipes scroll the page');
   await t.page.click('[data-part="drift"]');
   const chip = t.page.locator('#sel-chip');
   assert.ok(await chip.isVisible(), 'the selected part is named in the view');
@@ -70,6 +69,47 @@ test('on a phone, a tapped part shows its name in the view, and Labels shows lab
   await wait(300);
   assert.ok((await shownLabels(t.page)) > 0, 'ticking Labels shows some');
   assert.deepEqual(await labelsOutside(t.page), []);
+  await t.close();
+});
+
+test('on a phone, one finger scrolls the page and two fingers turn and tilt the model', async () => {
+  const t = await open({ viewport: { width: 390, height: 844 }, touch: true });
+  const cdp = await t.page.context().newCDPSession(t.page);
+  const touch = (type, pts) =>
+    cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts.map(([x, y], id) => ({ x, y, id })) });
+  // Drag the given fingers 160 px up, over the middle of the model.
+  const dragUp = async (dxs) => {
+    const r = await t.page.$eval('#scene', (c) => c.getBoundingClientRect().toJSON());
+    const x = r.left + r.width / 2;
+    const y = Math.min(r.top + r.height / 2, 700);
+    await touch('touchStart', dxs.map((dx) => [x + dx, y]));
+    for (let i = 1; i <= 8; i++) {
+      await touch('touchMove', dxs.map((dx) => [x + dx, y - 20 * i]));
+      await wait(16);
+    }
+    await touch('touchEnd', []);
+    await wait(300);
+  };
+  const camera = () =>
+    t.page.evaluate(() => ({ polar: window.__pageDebug.viewer.controls.getPolarAngle(), y: scrollY }));
+
+  const a = await camera();
+  await dragUp([0]);
+  const b = await camera();
+  assert.ok(b.y > a.y + 50, `one finger scrolls the page (${a.y} → ${b.y})`);
+  assert.ok(Math.abs(b.polar - a.polar) < 1e-3, 'and leaves the model alone');
+
+  await dragUp([0]);
+  assert.match(await t.page.getAttribute('#viewport', 'class'), /is-touch-hint/, 'with a reminder to use two fingers');
+
+  await t.page.evaluate(() => scrollTo(0, 0));
+  await wait(300);
+  const c = await camera();
+  await dragUp([-40, 40]);
+  const d = await camera();
+  assert.ok(Math.abs(d.polar - c.polar) > 0.05, `two fingers tilt the model (${c.polar} → ${d.polar})`);
+  assert.ok(Math.abs(d.y - c.y) < 5, 'without scrolling the page');
+  assert.deepEqual(t.errors, []);
   await t.close();
 });
 

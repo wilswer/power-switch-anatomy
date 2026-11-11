@@ -6,7 +6,9 @@ Interactive learning material for power semiconductor devices.
 
 Exploded 3D drawings of one transistor cell each of a 1200 V SiC MOSFET, a 650 V GaN HEMT
 and a 1200 V silicon IGBT, and of the package each one comes in. Rotate and zoom the model,
-pull the layers apart, and click any part to read what it is and why it matters. Cell modes:
+pull the layers apart, and click any part to read what it is and why it matters. On a phone,
+one finger scrolls the page and taps a part, and two fingers turn, tilt and zoom the model.
+Cell modes:
 
 - **Explore**: the exploded view.
 - **Gate ON**: the stack collapses, the channel forms and carriers flow (electrons, plus holes
@@ -138,9 +140,10 @@ when the user interrupts it, keyboard, focus and reduced motion, and the package
 scale switching, links, the heat slider and chart, the module's switching states, and
 layouts with no sideways scrolling, and the products: power flow, flashing switches, the
 turning motor, the waveform chart, and a tour card that keeps its size on every step. They
-also check that labels stay inside the 3D view, that a phone names the tapped part, that the
-page works offline, that links restore the mode, and that animations stop with reduced
-motion and drawing stops off screen. CI runs both suites before every deploy.
+also check that labels stay inside the 3D view, that a phone names the tapped part and
+scrolls with one finger but turns the model with two, that the page works offline, that
+links restore the mode, and that animations stop with reduced motion and drawing stops off
+screen. CI runs both suites before every deploy.
 
 ## License
 

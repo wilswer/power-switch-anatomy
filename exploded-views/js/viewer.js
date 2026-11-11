@@ -12,9 +12,11 @@ import { reducedMotion, onMotionChange } from './motion.js';
 // DEPTH into the screen) or from `solids` (packages: boxes, slabs and bond
 // wires in full 3D, see packages/solids.js).
 
-// On a phone, a vertical swipe over the model scrolls the page instead of
-// turning the model (OrbitControls would otherwise claim every touch).
+// On a phone the model takes most of the screen, so touch works as in an
+// embedded map: one finger scrolls the page (and a tap picks a part), two
+// fingers turn, tilt and zoom the model.
 const narrowScreen = window.matchMedia('(max-width: 720px)');
+const HINT_MS = 1600;
 const VIEW_DIR = new THREE.Vector3(0.95, 0.62, 1.45).normalize();
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -148,9 +150,16 @@ export class Viewer {
       this.controls.enableDamping = !reducedMotion();
       if (reducedMotion()) this.explode = this.explodeTarget;
     });
-    const setTouch = () => (canvas.style.touchAction = narrowScreen.matches ? 'pan-y' : 'none');
+    const setTouch = () => {
+      const shared = narrowScreen.matches;
+      canvas.style.touchAction = shared ? 'pan-x pan-y' : 'none';
+      this.controls.touches = shared
+        ? { ONE: null, TWO: THREE.TOUCH.DOLLY_ROTATE }
+        : { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+    };
     setTouch();
     narrowScreen.addEventListener('change', setTouch);
+    this._bindTouchHint();
 
     // Draw only while the view is on screen; scrolled away, the page idles.
     this._running = false;
@@ -489,6 +498,34 @@ export class Viewer {
       this.select(id);
       this.onSelect?.(id);
     });
+  }
+
+  // With shared touch (phones), keep the browser from scrolling or zooming the
+  // page under a two-finger gesture, and remind a one-finger drag that it
+  // scrolls: "Use two fingers to turn the model".
+  _bindTouchHint() {
+    let start = null;
+    let timer = 0;
+    const onTouch = (e) => {
+      if (!narrowScreen.matches) return;
+      if (e.touches.length > 1) {
+        start = null;
+        if (e.cancelable) e.preventDefault();
+        return;
+      }
+      const t = e.touches[0];
+      if (e.type === 'touchstart') {
+        start = t && { x: t.clientX, y: t.clientY };
+        return;
+      }
+      if (!start || !t || Math.hypot(t.clientX - start.x, t.clientY - start.y) < 12) return;
+      start = null;
+      this.viewport.classList.add('is-touch-hint');
+      clearTimeout(timer);
+      timer = setTimeout(() => this.viewport.classList.remove('is-touch-hint'), HINT_MS);
+    };
+    this.canvas.addEventListener('touchstart', onTouch, { passive: false });
+    this.canvas.addEventListener('touchmove', onTouch, { passive: false });
   }
 
   _pick(e) {
