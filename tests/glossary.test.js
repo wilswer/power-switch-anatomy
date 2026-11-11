@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { GLOSSARY, findTerm } from '../exploded-views/js/glossary.js';
 import { TOUR } from '../exploded-views/js/tour.js';
 import { DEVICES } from '../exploded-views/js/devices/index.js';
@@ -19,7 +20,12 @@ function strings(x, out = []) {
   else if (x && typeof x === 'object') Object.values(x).forEach((y) => strings(y, out));
   return out;
 }
+// The static page text too, without its markup, scripts and styles.
+const HTML = readFileSync(new URL('../exploded-views/index.html', import.meta.url), 'utf8')
+  .replace(/<(script|style)[\s\S]*?<\/\1>/g, '')
+  .replace(/<[^>]+>/g, ' ');
 const PAGE_TEXT = [
+  HTML,
   ...TOUR.map((s) => s.body),
   ...strings([Object.values(DEVICES), Object.values(PACKAGES), Object.values(APPS), FAILURES]),
 ];

@@ -73,6 +73,11 @@ test('the power-cycling test draws a device to end of life, and more devices sho
   const box = await t.page.locator('#cycle-plot').boundingBox();
   await t.page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.5);
   assert.match(await t.page.textContent('.cycle-plot .hp-tip'), /cycles.*R.*wire/s);
+  const rect = (sel) => t.page.$eval(sel, (el) => el.getBoundingClientRect().toJSON());
+  const tip = await rect('.cycle-plot .hp-tip');
+  const fig = await rect('.cycle-plot');
+  assert.ok(Math.abs(tip.bottom - (box.y + box.height * 0.5)) < 40, `the tooltip sits by the pointer (${tip.bottom} vs ${box.y + box.height * 0.5})`);
+  assert.ok(tip.left >= fig.left - 1 && tip.right <= fig.right + 1, 'and inside the chart');
   assert.deepEqual(t.errors, []);
   await t.close();
 });

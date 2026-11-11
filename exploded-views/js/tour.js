@@ -41,7 +41,7 @@ const STEPS = [
     view: VIEW.standard,
     zoom: 1,
     title: 'Why power electronics?',
-    body: `Much of the electricity you use passes through a power converter on the way: a phone charger like this one, a car’s charger, a motor drive, a solar inverter. Each changes voltage or frequency by switching transistors fully on and fully off, thousands to millions of times a second. This tour takes those switches apart.`,
+    body: `Much of the electricity you use passes through a power converter on the way: a phone charger like this one, a car’s charger, a motor drive, a solar inverter. Each changes voltage or frequency by <a href="#switching">switching transistors fully on and fully off</a>, thousands to millions of times a second. This tour takes those switches apart.`,
   },
   {
     device: 'sic',

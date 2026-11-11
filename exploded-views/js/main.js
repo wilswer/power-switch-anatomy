@@ -23,6 +23,7 @@ import { reducedMotion as reduceMotion } from './motion.js';
 import { agedHeat, powerCyclingTest, CAUSES, EOL } from './aging.js';
 import { renderCyclePlot, bindCycleTooltip, fmtCycles } from './cycleplot.js';
 import { markTerms, renderGlossary, bindTerms } from './terms.js';
+import { initSwitching } from './switching-ui.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 
@@ -1080,6 +1081,7 @@ function boot() {
   renderFailures();
   renderGlossary($('#glossary-list'));
   bindTerms();
+  const switching = initSwitching($('#sw-lab'));
   wireUI();
   const fromHash = parseHash();
   if (DEVICES[fromHash.id]) {
@@ -1125,7 +1127,7 @@ function boot() {
   }
   window.__viewerBooted = true;
   // Read-only handle for the browser tests in tests/e2e/.
-  window.__pageDebug = { state, viewer, effects, pkgEffects, tour, heat: () => heatResult };
+  window.__pageDebug = { state, viewer, effects, pkgEffects, tour, heat: () => heatResult, switching };
   setDevice(state.device, { fromHash: true, scale: state.scale });
 }
 

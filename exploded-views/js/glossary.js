@@ -195,6 +195,18 @@ export const GLOSSARY = [
     def: 'Power factor correction: a converter stage that draws a sine-wave current in step with the grid voltage, so the device looks to the grid like a resistor.',
   },
   {
+    id: 'duty-cycle',
+    term: 'Duty cycle',
+    match: ['duty cycle', 'duty cycles'],
+    def: 'The fraction of each switching period that a switch is on. Filtered, a switch that chops an input at duty cycle D gives an average of D times the input.',
+  },
+  {
+    id: 'pwm',
+    term: 'Pulse-width modulation (PWM)',
+    match: ['pulse-width modulation', 'PWM'],
+    def: 'Switching at a fixed frequency while varying the duty cycle, so the filtered average follows whatever is wanted: a constant voltage, or a sine.',
+  },
+  {
     id: 'dc-link',
     term: 'DC link',
     match: ['DC link', 'DC-link'],

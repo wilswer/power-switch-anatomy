@@ -265,6 +265,57 @@
           </table>
         </div>
 
+        <h3 class="table-title" id="switching">Switching, step by step</h3>
+        <p class="intro sw-intro">
+          How can switching on and off change a voltage, or make AC? The switch chops the input into pulses, and a
+          filter of inductors and capacitors keeps only their average. Change how long each pulse lasts (the duty
+          cycle) and the average follows. In frequency terms, the average is the low-frequency part of the pulses, and the
+          switching pushes everything else up to the switching frequency, where the filter removes it.
+        </p>
+        <div class="sw-lab" id="sw-lab">
+          <div class="sw-controls">
+            <div class="seg small" role="group" aria-label="Conversion">
+              <button type="button" data-sw-mode="dc" aria-pressed="true">DC to lower DC</button>
+              <button type="button" data-sw-mode="ac" aria-pressed="false">DC to AC</button>
+            </div>
+            <div class="volt" data-sw-for="dc">
+              <div class="volt-head"><label for="sw-d">Duty cycle: on for</label><output id="sw-d-out" for="sw-d"></output></div>
+              <input type="range" id="sw-d" min="0" max="100" step="1" value="40" />
+              <div class="volt-scale"><span>always off</span><span>always on</span></div>
+            </div>
+            <div class="volt" data-sw-for="ac" hidden>
+              <div class="volt-head"><label for="sw-m">How deep the sine swings</label><output id="sw-m-out" for="sw-m"></output></div>
+              <input type="range" id="sw-m" min="0" max="100" step="1" value="85" />
+              <div class="volt-scale"><span>0</span><span>1 (full DC link)</span></div>
+            </div>
+            <div class="volt" data-sw-for="ac" hidden>
+              <div class="volt-head"><label for="sw-f">Output frequency</label><output id="sw-f-out" for="sw-f"></output></div>
+              <input type="range" id="sw-f" min="0" max="5" step="1" value="4" />
+              <div class="volt-scale"><span>10 Hz</span><span>100 Hz</span></div>
+            </div>
+            <div class="volt">
+              <div class="volt-head"><label for="sw-fc">Filter corner</label><output id="sw-fc-out" for="sw-fc"></output></div>
+              <input type="range" id="sw-fc" min="0" max="100" step="0.5" value="33" />
+              <div class="volt-scale"><span>strong filter</span><span>weak filter</span></div>
+            </div>
+            <dl class="stats readouts" id="sw-readouts"></dl>
+            <p class="sw-explain" id="sw-explain"></p>
+          </div>
+          <div class="sw-plots">
+            <figure class="plot sw-time">
+              <svg id="sw-time" role="img" aria-label="Switched voltage and filtered output over time"></svg>
+            </figure>
+            <figure class="plot sw-spec">
+              <svg id="sw-spec" role="img" aria-label="Spectrum of the switched voltage, before and after the filter"></svg>
+              <figcaption>
+                Each line is one sine wave hidden in the pulses (their Fourier series). Light lines: in the switched
+                voltage. Dark lines: what is left after the filter, which passes what lies below its corner and cuts
+                what lies above.
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+
         <div class="aside-pair">
           <article class="aside">
             <h3>Why switch?</h3>

@@ -72,8 +72,12 @@ flyback's switching cycle).
 
 Part cards link the scales ("See it in the package", "Open the cell view", "See it at work").
 
-Below the viewer: a short physics primer, "Converters in brief" (rectifiers, inverters, DC-DC
-and AC-AC converters, and why switching wastes so little), Si / SiC / GaN comparison tables,
+Below the viewer: a short physics primer, the glossary, "Converters in brief" (rectifiers,
+inverters, DC-DC and AC-AC converters, and why switching wastes so little) with **Switching,
+step by step**, an interactive figure of how switching changes a voltage or makes AC: set the
+duty cycle (or the sine it follows) and a filter's corner, and see the pulses, the filtered
+output and the spectrum of both (an FFT of the waveform and an LC filter applied to it,
+`switching.js`), Si / SiC / GaN comparison tables,
 a field guide (the scales from cell to product, which products use which switch and
 package, how to read a datasheet, and safety notes for opening equipment), and, last,
 **Failure modes**: when devices fail (the bathtub curve), how lifetime is estimated from a
@@ -85,7 +89,7 @@ in the 3D views list the failure modes of that part.
 ### Run it
 
 Online: **https://wilswer.github.io/power-switch-anatomy/**, published from `main` by GitHub
-Actions (`.github/workflows/pages.yml`, which runs the unit tests first).
+Actions (`.github/workflows/pages.yml`, which runs the unit and browser tests first).
 
 Locally, it is a static site; any web server works. The included one:
 
@@ -112,6 +116,8 @@ its own fonts.
 | `exploded-views/js/apps/` | The three products: 3D solids, power-flow paths, waveforms and their text |
 | `exploded-views/js/physics.js` | Field models for Blocking mode (pure functions) |
 | `exploded-views/js/thermal.js` | Heat-flow model for the package Heat mode (pure functions) |
+| `exploded-views/js/switching.js` | PWM waveforms, an FFT and an LC filter for Switching, step by step (pure functions) |
+| `exploded-views/js/switchplot.js`, `switching-ui.js` | Its two charts, and its controls and readouts |
 | `exploded-views/js/glossary.js` | The glossary terms, their definitions and the matcher that finds them in text (pure) |
 | `exploded-views/js/terms.js` | Marks glossary terms in rendered text and shows their definitions |
 | `exploded-views/js/aging.js` | Wear (cracked die attach, lifted wires) and the simulated power-cycling test (pure functions) |
@@ -150,7 +156,10 @@ the same geometry rules, and that the numbers their texts quote (power, voltages
 averaging to a sine wave) match their waveforms. The aging tests check that wear raises the
 right signal, that the end-of-life lines fall at plausible crack areas and wire counts, and
 that a simulated test replays from its seed, scatters between devices and follows the
-fifth-power law of the swing. The glossary tests check that every term is used on the page, that terms match whole words,
+fifth-power law of the swing. The switching tests check the FFT against a direct Fourier
+transform, a pulse train against the textbook Fourier series of a square wave, the filter's
+−3 dB corner and 40 dB per decade, and that an inverter leg makes the sine it is asked for.
+The glossary tests check that every term is used on the page, that terms match whole words,
 longest first, and that other senses of a word (a screw hole, threshold drift, a coolant
 channel) are left alone. The failure-mode tests check that every
 card is complete and that every part it points at exists. The tour tests check that

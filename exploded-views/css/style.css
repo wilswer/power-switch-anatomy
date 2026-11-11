@@ -1311,7 +1311,10 @@ h1 {
 
 /* product waveforms */
 
-.waves-plot {
+.waves-plot,
+.cycle-plot,
+.sw-time,
+.sw-spec {
   position: relative;
 }
 
@@ -1677,6 +1680,112 @@ line.cy-von {
   max-width: 65ch;
   margin: 0 0 24px;
   color: var(--ink-2);
+}
+
+/* ---------- Switching, step by step ---------- */
+
+.sw-intro {
+  margin-bottom: 16px;
+}
+
+.sw-lab {
+  display: grid;
+  grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+  gap: 20px 32px;
+  align-items: start;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.sw-controls {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.sw-controls .seg {
+  justify-self: start;
+}
+
+.sw-controls .volt {
+  margin: 0;
+}
+
+.sw-controls .volt[hidden] {
+  display: none;
+}
+
+.sw-explain {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.sw-plots {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sw-plots .plot {
+  margin: 0;
+}
+
+.sw-switched {
+  stroke: var(--ink-3);
+  stroke-width: 1.2;
+}
+
+.sw-filtered {
+  stroke: var(--plot-2);
+  stroke-width: 2.2;
+}
+
+.sw-target {
+  stroke: var(--plot-line);
+  stroke-width: 1.4;
+  stroke-dasharray: 5 3;
+}
+
+line.sw-switched,
+line.sw-filtered,
+line.sw-target {
+  stroke-width: 2;
+}
+
+.sw-before {
+  stroke: var(--ink-3);
+  stroke-width: 6;
+  opacity: 0.35;
+}
+
+.sw-after {
+  stroke: var(--plot-2);
+  stroke-width: 2.5;
+}
+
+.sw-cut {
+  fill: var(--ink);
+  opacity: 0.05;
+}
+
+.sw-corner {
+  stroke: var(--ink-2);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.sw-corner-label {
+  font: 400 10px/1 var(--font-mono);
+  fill: var(--ink-2);
+}
+
+@media (max-width: 860px) {
+  .sw-lab {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 14px;
+  }
 }
 
 /* ---------- glossary terms ---------- */
