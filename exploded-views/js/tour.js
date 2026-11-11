@@ -335,6 +335,17 @@ const STEPS = [
     body: `Slower temperature swings shear the solder layers. Cracks grow in from the corners and narrow the heat path, so the thermal resistance rises and the die runs hotter and ages faster. A thermal resistance that grows over time shows it coming.`,
   },
   {
+    mode: 'heat',
+    explode: 1,
+    heat: { P: 200 },
+    age: { crack: 0.3, lifted: 2 },
+    focus: 'chipSolder',
+    view: VIEW.high,
+    zoom: 0.8,
+    title: 'Age a module yourself',
+    body: `Here the solder under one IGBT die has lost 30 % of its area, and two of its five wires have lifted. R<sub>th(j-c)</sub> is up by more than a quarter, past the +20 % end-of-life line; V<sub>CE(on)</sub> is up about 4 %, just short of its +5 %. Under the heat chart, “Age it” has these controls and a simulated power-cycling test.`,
+  },
+  {
     mode: 'explore',
     focus: 'ceramic',
     view: VIEW.standard,
@@ -471,6 +482,7 @@ export const TOUR = STEPS.reduce((out, step) => {
     block: step.block ?? null,
     heat: step.heat ?? null,
     phase: step.phase ?? null,
+    age: step.age ?? null, // wear in Heat mode; a package without it is new
     sweep: step.sweep ? { what: 'V', ...step.sweep } : null,
     title: step.title,
     body: step.body,

@@ -17,7 +17,7 @@ Cell modes:
   1D abrupt-junction model for the vertical devices and an illustrative shape for GaN.
 
 A **guided tour** (masthead button or Tour in the toolbar) walks through all three devices in
-45 steps, with chapters on their packages, on what converters do, on the products they work
+46 steps, with chapters on their packages, on what converters do, on the products they work
 in, on how they fail (highlighting the parts that wear out), and an outlook on where power
 electronics is heading and its open questions: it sets the
 device, scale, mode and camera,
@@ -41,14 +41,20 @@ Package modes:
 - **Heat**: a power-loss slider, each layer colored by temperature, a chart of where the
   temperature drops, and the junction-to-case resistance. It uses a 1D heat-flow model with
   45° spreading (`thermal.js`).
+- **Age it** (in Heat): crack the die attach and lift bond wires, and see R<sub>th(j-c)</sub>, the
+  on-state voltage, the junction temperature and the losses move against the usual
+  end-of-life lines (+20 % and +5 %); the 3D model shows the shrunken joint and the missing
+  wires. Below that, a simulated power-cycling test draws both signals cycle by cycle until
+  the part wears out, and "Test another device" adds more to show the scatter
+  (`aging.js`, with illustrative, not measured, numbers).
 
 **Application** (the third Zoom option) shows each package at work in a product that the
 tour's wrap-up names:
 
 - **Si IGBT → 30 kW motor drive**: three half-bridge modules on a finned heatsink with a fan,
   busbar, capacitor bank and gate-driver board, cabled to an induction motor.
-- **SiC MOSFET → 11 kW EV on-board charger**: eight TO-247-4s on a liquid-cooled floor, a
-  PFC stage and an isolated DC-DC stage.
+- **SiC MOSFET → 11 kW EV on-board charger**: ten TO-247-4s on a liquid-cooled floor, a
+  three-phase PFC stage (a half-bridge per phase) and an isolated DC-DC stage.
 - **GaN HEMT → 65 W USB-C charger**: the PQFN part on the board next to the transformer.
 
 Each product's panel shows its conversion chain (for the drive: grid AC → rectifier → DC
@@ -101,6 +107,8 @@ its own fonts.
 | `exploded-views/js/apps/` | The three products: 3D solids, power-flow paths, waveforms and their text |
 | `exploded-views/js/physics.js` | Field models for Blocking mode (pure functions) |
 | `exploded-views/js/thermal.js` | Heat-flow model for the package Heat mode (pure functions) |
+| `exploded-views/js/aging.js` | Wear (cracked die attach, lifted wires) and the simulated power-cycling test (pure functions) |
+| `exploded-views/js/cycleplot.js` | The power-cycling chart in Age it |
 | `exploded-views/js/viewer.js` | three.js scene, exploding, picking, callout labels |
 | `exploded-views/js/effects.js` | Moving carriers and field slices (cells) |
 | `exploded-views/js/package-effects.js` | Current dots and temperature colors (packages) |
@@ -132,7 +140,10 @@ tests check that no two solid parts overlap, that every bond wire lands on metal
 heat, current and cross-scale links point at real parts, and that each package's
 junction-to-case resistance lands in the range datasheets quote. The product tests check
 the same geometry rules, and that the numbers their texts quote (power, voltages, the PWM
-averaging to a sine wave) match their waveforms. The failure-mode tests check that every
+averaging to a sine wave) match their waveforms. The aging tests check that wear raises the
+right signal, that the end-of-life lines fall at plausible crack areas and wire counts, and
+that a simulated test replays from its seed, scatters between devices and follows the
+fifth-power law of the swing. The failure-mode tests check that every
 card is complete and that every part it points at exists. The tour tests check that
 every step points at a real device, scale, mode and visible part, and that the numbers the
 tour and package texts quote match the models. The browser tests cover how the tour behaves

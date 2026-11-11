@@ -11,7 +11,6 @@ import {
   THERMAL_GRADIENT_CSS,
 } from './palette.js';
 import { blockingResult, blockingStatus } from './physics.js';
-import { thermalStack } from './thermal.js';
 import { renderFieldPlot } from './fieldplot.js';
 import { renderHeatPlot, bindHeatTooltip, fmtR, fmtT } from './heatplot.js';
 import { renderWaves, bindWavesTooltip } from './wavesplot.js';
@@ -21,6 +20,8 @@ import { PackageEffects } from './package-effects.js';
 import { createTourPlayer } from './tour-player.js';
 import { FAILURES, FAILURE_GROUPS } from './failures.js';
 import { reducedMotion as reduceMotion } from './motion.js';
+import { agedHeat, powerCyclingTest, CAUSES, EOL } from './aging.js';
+import { renderCyclePlot, bindCycleTooltip, fmtCycles } from './cycleplot.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 
@@ -59,6 +60,8 @@ const state = {
   ),
   heat: Object.fromEntries(Object.entries(PACKAGES).map(([id, p]) => [id, { P: p.heat.Pdefault }])),
   phase: Object.fromEntries(Object.entries(PACKAGES).map(([id, p]) => [id, p.current.phases?.[0].id ?? null])),
+  // "Age it" in Heat mode: share of the die attach cracked, and wires lifted.
+  age: Object.fromEntries(Object.keys(PACKAGES).map((id) => [id, { crack: 0, lifted: 0 }])),
 };
 
 let viewer = null;
@@ -66,6 +69,10 @@ let effects = null;
 let pkgEffects = null;
 let tour = null;
 let heatResult = null;
+// The simulated power-cycling test per package: the random seeds of the
+// devices tested so far, and their runs at the current load.
+const cycling = Object.fromEntries(Object.keys(PACKAGES).map((id) => [id, { seeds: [1], P: null, runs: [] }]));
+let cyclingTimer = 0;
 
 const els = {
   tabs: [...document.querySelectorAll('[data-device]')],
@@ -216,11 +223,11 @@ function revealPartCard() {
 // scenes. The user's own settings are put back when the tour ends.
 let userSettings = null;
 function saveUserSettings() {
-  userSettings = structuredClone({ block: state.block, heat: state.heat, phase: state.phase });
+  userSettings = structuredClone({ block: state.block, heat: state.heat, phase: state.phase, age: state.age });
 }
 function restoreUserSettings() {
   if (!userSettings) return;
-  for (const key of ['block', 'heat', 'phase']) Object.assign(state[key], userSettings[key]);
+  for (const key of ['block', 'heat', 'phase', 'age']) Object.assign(state[key], userSettings[key]);
   userSettings = null;
   if (state.scale === 'package') pkgEffects?.setPhase(state.phase[state.device]);
   renderAll();
@@ -238,6 +245,8 @@ function applyTourStep(st) {
   if (st.block) Object.assign(state.block[st.device], st.block);
   if (st.heat) Object.assign(state.heat[st.device], st.heat);
   if (st.phase) state.phase[st.device] = st.phase;
+  // A package in a tour step is new unless the step wears it.
+  if (st.scale === 'package') Object.assign(state.age[st.device], { crack: 0, lifted: 0 }, st.age);
   state.explode = st.explode;
   els.explode.value = String(st.explode);
   viewer?.setExplode(st.explode);
@@ -487,6 +496,7 @@ function renderHeatCard() {
       <figcaption>Each column is one layer, from its top to its bottom temperature. The tallest column is the layer that costs the most.</figcaption>
     </figure>
     <div class="ramp"><span>${h.Tref} °C</span><i style="background:${THERMAL_GRADIENT_CSS}"></i><span>${h.Tmax} °C</span></div>
+    ${renderAgeSection()}
     <table class="layer-table" id="heat-table"></table>
     ${h.text.map((t) => `<p>${t}</p>`).join('')}
     <p class="note">A one-dimensional model: heat fans out at 45° through each layer, conductivities are room-temperature values, and the ${h.refName.toLowerCase()} is held at ${h.Tref} °C. Real hot devices run somewhat hotter.</p>`;
@@ -496,13 +506,143 @@ function renderHeatCard() {
     updateHeat();
   });
   bindHeatTooltip($('.heat-plot'), $('#heat-plot'), () => heatResult);
+  bindAgeControls();
   updateHeat();
+  clearTimeout(cyclingTimer);
+  runCycling({ force: false }); // draw the test at once, not after the pause
+}
+
+// ---------- "Age it" (Heat mode) ----------
+
+function renderAgeSection() {
+  const a = pkg().aging;
+  const age = state.age[state.device];
+  const n = a.electrical.wires;
+  return `<section class="age" aria-labelledby="age-title">
+    <h3 class="age-title" id="age-title">Age it</h3>
+    <p>Wear the package the way years of load changes do, and watch what a lab would measure.</p>
+    <div class="volt">
+      <div class="volt-head"><label for="age-crack">Cracked die attach</label><output id="age-crack-out" for="age-crack"></output></div>
+      <input type="range" id="age-crack" min="0" max="70" step="5" value="${Math.round(age.crack * 100)}">
+      <div class="volt-scale"><span>new</span><span>70 % of the area</span></div>
+    </div>
+    <div class="volt">
+      <div class="volt-head"><label for="age-wires">Lifted ${a.wires.name}</label><output id="age-wires-out" for="age-wires"></output></div>
+      <input type="range" id="age-wires" min="0" max="${n - 1}" step="1" value="${age.lifted}">
+      <div class="volt-scale"><span>none</span><span>${n - 1} of ${n}</span></div>
+    </div>
+    <p class="status" id="age-status"></p>
+    <dl class="stats readouts" id="age-readouts"></dl>
+    <p><button type="button" class="ghost" id="age-reset">Back to new</button></p>
+    <h4>A power-cycling test</h4>
+    <p>A lab switches the load on and off until the part wears out. This one swings the junction by <b id="cy-swing"></b> each cycle, at the power above. After each heating it reads the on-state voltage hot, at the load current, and the thermal resistance from how the die cools.</p>
+    <figure class="plot cycle-plot">
+      <svg id="cycle-plot" role="img" aria-label="Change of the thermal resistance and the on-state voltage over power cycles, until end of life"></svg>
+      <figcaption id="cy-caption"></figcaption>
+    </figure>
+    <p class="cy-actions"><button type="button" class="ghost" id="cy-another">Test another device</button><span id="cy-summary"></span></p>
+    <p class="note">Illustrative numbers, not a real part's: typical wire and die voltages; the losses follow the on-state voltage at the same current; wire lives scatter like a Weibull distribution and shorten with the fifth power of the swing; the swing is taken as the steady-state rise. Cracks in the baseplate solder are left out: under one die in the middle of a large tile they do nothing until they reach the die.</p>
+  </section>`;
+}
+
+function bindAgeControls() {
+  const age = state.age[state.device];
+  $('#age-crack').addEventListener('input', (e) => {
+    tour?.stopSweep();
+    age.crack = Number(e.target.value) / 100;
+    updateHeat();
+  });
+  $('#age-wires').addEventListener('input', (e) => {
+    tour?.stopSweep();
+    age.lifted = Number(e.target.value);
+    updateHeat();
+  });
+  $('#age-reset').addEventListener('click', () => {
+    age.crack = 0;
+    age.lifted = 0;
+    $('#age-crack').value = '0';
+    $('#age-wires').value = '0';
+    updateHeat();
+  });
+  $('#cy-another').addEventListener('click', () => {
+    const c = cycling[state.device];
+    c.seeds = [...c.seeds, Math.max(...c.seeds) + 1].slice(-8);
+    runCycling({ force: false });
+  });
+  bindCycleTooltip($('.cycle-plot'), $('#cycle-plot'), () => cycling[state.device].runs, pkg().aging.electrical.label);
+}
+
+function updateAge(aged) {
+  const a = pkg().aging;
+  const el = a.electrical;
+  const age = state.age[state.device];
+  const pct = (x) => `${x >= 0 ? '+' : '−'}${Math.abs(x * 100).toFixed(1)} %`;
+  $('#age-crack-out').textContent = `${Math.round(age.crack * 100)} %`;
+  $('#age-wires-out').textContent = `${age.lifted} of ${el.wires}`;
+  const status = $('#age-status');
+  const worn = age.crack > 0 || age.lifted > 0;
+  const past = [aged.eol.Rth && `R<sub>th(j-c)</sub> ${pct(aged.dR)}`, aged.eol.Von && `${el.label} ${pct(aged.dV)}`].filter(Boolean);
+  status.className = `status ${!worn ? 'is-ok' : past.length || aged.runaway ? 'is-danger' : 'is-warn'}`;
+  status.innerHTML = !worn
+    ? 'New: nothing worn yet'
+    : aged.runaway
+      ? 'Thermal runaway: the losses heat the die faster than it can cool'
+      : past.length
+        ? `Past end of life: ${past.join(' and ')}`
+        : 'Worn, but still inside both end-of-life limits';
+  const rows = [
+    ['R<sub>th(j-c)</sub>', `${fmtR(aged.healthy.Rjc)} → ${fmtR(aged.result.Rjc)} K/W, ${pct(aged.dR)} (end of life at +${EOL.Rth * 100} %)`],
+    [`${el.label} at ${el.I} A, hot`, `${aged.V0.toFixed(2)} → ${aged.V.toFixed(2)} V, ${pct(aged.dV)} (end of life at +${EOL.Von * 100} %)`],
+    ['Junction', `${Math.round(aged.healthy.Tj)} → ${Math.round(aged.result.Tj)} °C`],
+    ['Losses at the same current', `${state.heat[state.device].P} → ${aged.P.toFixed(aged.P < 10 ? 1 : 0)} W`],
+  ];
+  $('#age-readouts').innerHTML = rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
+}
+
+// Rerun the test a moment after the load stops changing (slider, sweep).
+function scheduleCycling() {
+  clearTimeout(cyclingTimer);
+  cyclingTimer = setTimeout(() => runCycling({ force: false }), 250);
+}
+
+function runCycling({ force }) {
+  if (state.scale !== 'package' || state.mode !== 'heat' || !$('#cycle-plot')) return;
+  const p = pkg();
+  const c = cycling[state.device];
+  const P = state.heat[state.device].P;
+  if (force || c.P !== P) {
+    c.P = P;
+    c.runs = [];
+  }
+  const have = new Set(c.runs.map((r) => r.seed));
+  for (const seed of c.seeds) {
+    if (!have.has(seed)) c.runs.push({ seed, ...powerCyclingTest(p.heat, p.aging, { P, seed }) });
+  }
+  c.runs = c.seeds.map((seed) => c.runs.find((r) => r.seed === seed));
+  const latest = c.runs.at(-1);
+  $('#cy-swing').textContent = `${Math.max(0, Math.round(latest.swing))} K`;
+  renderCyclePlot($('#cycle-plot'), c.runs, { vLabel: p.aging.electrical.label });
+  const lifts = latest.lifts.length;
+  $('#cy-caption').innerHTML = `R<sub>th(j-c)</sub> rises smoothly as the die attach cracks, and bends upward because a hotter die cracks faster. The voltage steps up each time a wire lifts (${lifts} here), and also creeps up because the die runs hotter: solder fatigue shows in both signals.`;
+  const Ns = c.runs.map((r) => r.end?.N).filter((N) => N != null);
+  const sorted = [...Ns].sort((x, y) => x - y);
+  const median = sorted[Math.floor((sorted.length - 1) / 2)];
+  $('#cy-summary').innerHTML = !latest.end
+    ? latest.swing < 1
+      ? 'At this load the junction barely swings, so nothing wears out.'
+      : `Nothing failed within ${fmtCycles(latest.points.at(-1).N)} cycles at this load.`
+    : c.runs.length > 1
+      ? `${c.runs.length} devices: ${Ns.map(fmtCycles).join(', ')} cycles, median ${fmtCycles(median)}. The same test, scattered by chance.`
+      : `This device lasted ${fmtCycles(latest.end.N)} cycles (${CAUSES[latest.end.cause]}). Test more to see the scatter.`;
 }
 
 function updateHeat() {
-  const h = pkg().heat;
+  const p = pkg();
+  const h = p.heat;
   const s = state.heat[state.device];
-  const r = thermalStack({ source: h.source, layers: h.layers, P: s.P, Tref: h.Tref });
+  const age = state.age[state.device];
+  const aged = agedHeat(h, p.aging, { P: s.P, ...age });
+  const r = aged.result;
   heatResult = r;
   $('#power-out').textContent = `${s.P} W`;
 
@@ -516,9 +656,10 @@ function updateHeat() {
   els.tourReadout.textContent = `${s.P} W · junction ${Math.round(r.Tj)} °C · limit ${h.Tmax} °C`;
 
   const biggest = r.layers.reduce((m, l) => (l.dT > m.dT ? l : m));
+  const worn = age.crack > 0 || age.lifted > 0;
   const rows = [
     ['Junction temperature', `${Math.round(r.Tj)} °C`],
-    ['R<sub>th</sub> junction to case', `${fmtR(r.Rjc)} K/W (the datasheet value)`],
+    ['R<sub>th</sub> junction to case', `${fmtR(r.Rjc)} K/W ${worn ? `(new: ${fmtR(aged.healthy.Rjc)})` : '(the datasheet value)'}`],
     [`R<sub>th</sub> junction to ${h.refName.toLowerCase()}`, `${fmtR(r.Rtotal)} K/W`],
     ['Biggest step', `${biggest.name}, ${Math.round((biggest.R / r.Rtotal) * 100)} % of the rise`],
   ];
@@ -533,6 +674,9 @@ function updateHeat() {
     ${group('Mounting', r.layers.filter((l) => !l.inPackage))}`;
   renderHeatPlot($('#heat-plot'), r, h);
   pkgEffects?.setHeat(r, h);
+  pkgEffects?.setAging(p.aging, age);
+  updateAge(aged);
+  scheduleCycling();
   renderLegend();
 }
 

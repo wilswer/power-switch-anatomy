@@ -597,4 +597,13 @@ export default {
       `The thick copper baseplate spreads the heat out to a much larger area before the grease, so the grease costs less than its poor conductivity suggests. Swap the alumina for aluminum nitride, which conducts heat about seven times better, and that biggest step shrinks several times over.`,
     ],
   },
+  // "Age it" in Heat mode (see aging.js): the chip solder under T1 cracks,
+  // and T1's power wires lift, from the hot middle of the die outward. Each
+  // drawn wire stands for two in a real module. Typical values for a 150 A
+  // IGBT4: V_CE(sat) ≈ 1.7 V at 25 °C, rising about 2 mV per kelvin.
+  aging: {
+    joint: { layer: 'chip', part: 'chipSolder', meshes: [0] },
+    wires: { part: 'powerWires', meshes: [2, 1, 3, 0, 4], name: 'wires on T1' },
+    electrical: { label: 'V<sub>CE(on)</sub>', I: 150, Vdie25: 1.7, tempco: 0.0014, wires: 5, Rwire: 0.0025 },
+  },
 };

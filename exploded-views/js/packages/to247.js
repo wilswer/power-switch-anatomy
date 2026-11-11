@@ -489,4 +489,12 @@ export default {
       `The thin pad costs more temperature than everything inside the package together, because the tab is live at the drain voltage and has to be insulated from the heatsink. The datasheet's R<sub>th(j-c)</sub> covers only the layers down to the back of the tab.`,
     ],
   },
+  // "Age it" in Heat mode (see aging.js): the die attach cracks, and the
+  // source wires lift (middle one first). Typical values for a 40 mΩ part
+  // at 25 A; R_DS(on) rises about 0.5 % per kelvin.
+  aging: {
+    joint: { layer: 'solder', part: 'solder', meshes: [0] },
+    wires: { part: 'sourceWires', meshes: [1, 0, 2], name: 'source wires' },
+    electrical: { label: 'V<sub>DS(on)</sub>', I: 25, Vdie25: 1.0, tempco: 0.0048, wires: 3, Rwire: 0.003 },
+  },
 };

@@ -61,6 +61,7 @@ export class PackageEffects {
   }
 
   setModel(model) {
+    this._aged = null; // the old model's meshes are gone
     this.model = model && model.scale !== 'cell' ? model : null;
     this.flow = this.model ? (this.model.current ?? this.model.action) : null;
     this.flowMode = this.model?.scale === 'app' ? 'action' : 'current';
@@ -73,8 +74,40 @@ export class PackageEffects {
     this.mode = mode;
     if (mode !== 'heat') {
       this.heat = null;
+      this._clearAging(); // wear is shown in Heat mode only
       if (this.model) this.viewer.setTints(null);
     }
+  }
+
+  // Show wear in the model (see aging.js): the cracked die attach shrinks to
+  // the part still bonded, and lifted wires are gone.
+  setAging(cfg, { crack, lifted }) {
+    this._clearAging();
+    const joint = this.viewer.parts.get(cfg.joint.part);
+    const wires = this.viewer.parts.get(cfg.wires.part);
+    if (!joint || !wires) return;
+    const s = Math.sqrt(1 - crack);
+    const center = new THREE.Vector3();
+    const shrunk = cfg.joint.meshes.flatMap((i) => [joint.meshes[i], joint.edges[i]]).filter(Boolean);
+    for (const o of shrunk) {
+      o.geometry.computeBoundingBox();
+      o.geometry.boundingBox.getCenter(center);
+      o.scale.set(s, 1, s);
+      o.position.set(center.x * (1 - s), 0, center.z * (1 - s)); // shrink toward its own center
+    }
+    const gone = cfg.wires.meshes.slice(0, lifted).map((i) => wires.meshes[i]);
+    for (const m of gone) m.visible = false;
+    this._aged = { shrunk, gone };
+  }
+
+  _clearAging() {
+    if (!this._aged) return;
+    for (const o of this._aged.shrunk) {
+      o.scale.set(1, 1, 1);
+      o.position.set(0, 0, 0);
+    }
+    for (const m of this._aged.gone) m.visible = true;
+    this._aged = null;
   }
 
   // Some packages show more than one switching state (the half-bridge module).

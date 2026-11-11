@@ -515,4 +515,12 @@ export default {
       `The board and the gap pad under it cost almost all the rest. That is the price of a surface-mount part: the circuit board, with its copper and vias, is the heatsink, and designing it is half of the thermal design.`,
     ],
   },
+  // "Age it" in Heat mode (see aging.js): the die attach cracks, and the
+  // source wires lift. Typical values for a 50 mΩ part at 8 A; GaN's
+  // R_DS(on) roughly doubles from 25 to 150 °C.
+  aging: {
+    joint: { layer: 'attach', part: 'attach', meshes: [0] },
+    wires: { part: 'wires', meshes: [5, 6, 4, 7], name: 'source wires' },
+    electrical: { label: 'V<sub>DS(on)</sub>', I: 8, Vdie25: 0.4, tempco: 0.008, wires: 4, Rwire: 0.004 },
+  },
 };

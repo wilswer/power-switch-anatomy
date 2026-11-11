@@ -10,6 +10,7 @@ import { DRIVE } from '../exploded-views/js/apps/drive.js';
 import { FAILURES } from '../exploded-views/js/failures.js';
 import { blockingResult } from '../exploded-views/js/physics.js';
 import { thermalStack } from '../exploded-views/js/thermal.js';
+import { agedHeat } from '../exploded-views/js/aging.js';
 
 const MODES = { cell: ['explore', 'on', 'block'], package: ['explore', 'current', 'heat'], app: ['explore', 'action'] };
 const MODELS = { cell: DEVICES, package: PACKAGES, app: APPS };
@@ -47,6 +48,11 @@ test('every tour step describes a complete, valid scene', () => {
     }
     if (st.phase) {
       assert.ok(model.current.phases?.some((ph) => ph.id === st.phase), `${where}: unknown phase ${st.phase}`);
+    }
+    if (st.age) {
+      assert.equal(st.mode, 'heat', `${where}: wear shows in Heat mode only`);
+      assert.ok(st.age.crack >= 0 && st.age.crack <= 0.7, `${where}: crack out of slider range`);
+      assert.ok(st.age.lifted >= 0 && st.age.lifted < model.aging.electrical.wires, `${where}: too many lifted wires`);
     }
     if (st.sweep?.what === 'V') {
       assert.equal(st.mode, 'block', `${where}: voltage sweeps only make sense in Blocking mode`);
@@ -157,4 +163,18 @@ test('the failure-modes chapter highlights parts that can fail', () => {
   const cosmic = steps.find((s) => s.focus === 'drift');
   assert.equal(cosmic.block.V, 800);
   assert.equal(DEVICES[cosmic.device].blocking.Vrated, 1200);
+});
+
+test('the aging step agrees with the aging model', () => {
+  const st = TOUR.find((s) => s.age);
+  const { heat, aging } = PACKAGES[st.device];
+  const r = agedHeat(heat, aging, { P: st.heat.P, ...st.age });
+  // "30 % of its area, and two of its five wires"
+  assert.equal(st.age.crack, 0.3);
+  assert.equal(st.age.lifted, 2);
+  assert.equal(aging.electrical.wires, 5);
+  // "R_th(j-c) is up by more than a quarter, past the +20 % end-of-life line"
+  assert.ok(r.dR > 0.25 && r.eol.Rth, `R_th +${(r.dR * 100).toFixed(1)} %`);
+  // "V_CE(on) is up about 4 %, just short of its +5 %"
+  assert.ok(r.dV > 0.035 && r.dV < 0.045 && !r.eol.Von, `V +${(r.dV * 100).toFixed(1)} %`);
 });

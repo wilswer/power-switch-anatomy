@@ -1351,6 +1351,85 @@ line.wv-accent {
   font: 400 10px var(--font-mono);
 }
 
+/* ---------- Age it (Heat mode) ---------- */
+
+.age {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.age-title {
+  margin-bottom: 4px;
+}
+
+.age h4 {
+  margin-top: 18px;
+}
+
+.cy-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.cy-line.is-past {
+  stroke-width: 1.2;
+  opacity: 0.28;
+}
+
+.cy-rth {
+  stroke: var(--plot-line);
+}
+
+.cy-von {
+  stroke: var(--plot-2);
+}
+
+line.cy-rth,
+line.cy-von {
+  stroke-width: 2;
+}
+
+.cy-eol {
+  stroke-width: 1 !important;
+  stroke-dasharray: 4 3;
+  opacity: 0.8;
+}
+
+.cy-eol-label,
+.cy-fail-label {
+  font: 400 9.5px/1 var(--font-mono);
+  fill: var(--ink-2);
+}
+
+.cy-fail {
+  stroke: var(--ink);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+
+.cy-fail.is-past {
+  stroke-dasharray: none;
+  opacity: 0.45;
+}
+
+.cy-cause {
+  fill: var(--ink-3);
+}
+
+.cy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+}
+
+.cy-actions span {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
 .wv-cross {
   stroke: var(--ink-2);
   stroke-width: 1;
