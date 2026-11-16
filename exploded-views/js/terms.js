@@ -6,7 +6,7 @@ import { GLOSSARY, findTerm, glossaryEntry } from './glossary.js';
 // Tapping or clicking a term pins the popover until the next click or Esc.
 
 // Never mark inside these: controls, headings, labels, live numbers, charts.
-const SKIP = 'a, button, input, label, select, textarea, output, h1, h2, h3, h4, dt, figure, svg, .kicker, .status, .readouts, .volt, .tour-readout, .fm-tags, .term';
+const SKIP = 'a, button, input, label, select, textarea, output, h1, h2, h3, h4, dt, figure, svg, .kicker, .status, .readouts, .volt, .tour-readout, .fm-tags, .chain-strip, .term';
 const CONTEXT = 24; // characters of preceding text the matcher may look at
 
 export function markTerms(root) {

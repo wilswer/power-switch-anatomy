@@ -218,6 +218,36 @@ export const GLOSSARY = [
     match: ['power cycling', 'power-cycling'],
     def: 'A test that heats a device with its own load current and lets it cool, over and over, until it wears out. The swing of junction temperature sets how long that takes.',
   },
+  {
+    id: 'power-factor',
+    term: 'Power factor',
+    match: ['power factor'],
+    def: 'The share of the current that delivers power: 1 when the current is a sine in step with the voltage, as in a resistor; lower when it is shifted or comes in spikes.',
+  },
+  {
+    id: 'threshold-voltage',
+    term: 'Threshold voltage',
+    match: ['threshold voltage', 'threshold-voltage'],
+    def: 'The gate voltage at which a channel starts to form and the switch begins to conduct, a few volts. A threshold that drifts over time is a sign of wear in the gate oxide.',
+  },
+  {
+    id: 'miller-plateau',
+    term: 'Miller plateau',
+    match: ['Miller plateau'],
+    def: 'A flat step in the gate voltage while a switch turns on or off: the driver’s charge goes into the capacitance between gate and drain as the drain voltage swings.',
+  },
+  {
+    id: 'dead-time',
+    term: 'Dead time',
+    match: ['dead time', 'dead-time'],
+    def: 'A short pause, from tens of nanoseconds to a few microseconds, between one switch of a half-bridge turning off and the other turning on, so the two never conduct together.',
+  },
+  {
+    id: 'desaturation',
+    term: 'Desaturation',
+    match: ['desaturation'],
+    def: 'The voltage across a switch that should be on rises, because the current has outgrown it, as in a short circuit. Gate drivers watch for it and turn the switch off.',
+  },
 ];
 
 const BY_ID = new Map(GLOSSARY.map((g) => [g.id, g]));

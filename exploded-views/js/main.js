@@ -24,6 +24,7 @@ import { agedHeat, powerCyclingTest, CAUSES, EOL } from './aging.js';
 import { renderCyclePlot, bindCycleTooltip, fmtCycles } from './cycleplot.js';
 import { markTerms, renderGlossary, bindTerms } from './terms.js';
 import { initSwitching } from './switching-ui.js';
+import { initChain } from './control-ui.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 
@@ -1028,10 +1029,12 @@ function wireUI() {
   els.partsList.addEventListener('pointerleave', () => viewer?.setHover(null));
 
   // A link to another view ends the tour; links to sections of the page
-  // (#failures, #fm-…) leave the view and the tour alone.
+  // (#failures, #fm-…) leave the view and the tour alone, and so does Back
+  // from such a link, which returns to the view already on screen.
   window.addEventListener('hashchange', () => {
     const { id, scale, mode } = parseHash();
     if (!DEVICES[id]) return;
+    if (id === state.device && scale === state.scale && mode === state.mode) return;
     if (tour?.isActive()) tour.stop();
     setDevice(id, { fromHash: true, scale, mode });
   });
@@ -1082,6 +1085,7 @@ function boot() {
   renderGlossary($('#glossary-list'));
   bindTerms();
   const switching = initSwitching($('#sw-lab'));
+  const chain = initChain($('#ctl'));
   wireUI();
   const fromHash = parseHash();
   if (DEVICES[fromHash.id]) {
@@ -1127,7 +1131,7 @@ function boot() {
   }
   window.__viewerBooted = true;
   // Read-only handle for the browser tests in tests/e2e/.
-  window.__pageDebug = { state, viewer, effects, pkgEffects, tour, heat: () => heatResult, switching };
+  window.__pageDebug = { state, viewer, effects, pkgEffects, tour, heat: () => heatResult, switching, chain };
   setDevice(state.device, { fromHash: true, scale: state.scale });
 }
 

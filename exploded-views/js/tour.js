@@ -18,6 +18,20 @@ const VIEW = {
   side: [0.75, 0.42, 1.5],
 };
 
+// The chain from the controller's clock to the switch (control.js), as a
+// strip at the top of a card, with this step's stages in bold.
+const CHAIN_STRIP = [
+  ['clock', 'Clock'],
+  ['pwm', 'PWM unit'],
+  ['driver', 'Gate driver'],
+  ['gate', 'Gate'],
+  ['switch', 'Switch'],
+];
+const chainStrip = (...here) =>
+  `<ol class="chain-strip" aria-label="From the clock to the switch">${CHAIN_STRIP.map(
+    ([id, name]) => `<li${here.includes(id) ? ' class="is-here" aria-current="step"' : ''}>${name}</li>`,
+  ).join('')}</ol>`;
+
 export const CHAPTERS = {
   basics: 'The basics',
   sic: 'SiC MOSFET',
@@ -314,6 +328,24 @@ const STEPS = [
     body: `Switched on, power flows from the grid through the rectifier and capacitors into the modules and out to the motor. Each module only ever connects its wire to 0 or 560 V, but with pulse widths that rise and fall; the panel shows how their average becomes the motor's smooth sine-wave current.`,
   },
   {
+    mode: 'explore',
+    explode: 1,
+    focus: 'controlBoard',
+    view: VIEW.standard,
+    zoom: 0.9,
+    title: 'What times the pulses',
+    body: `${chainStrip('clock', 'pwm')}A clock on the control board ticks 100 million times a second. A counter counts the ticks and starts over at the switching frequency, and each switch is on while the count is below a number the motor-control software sets. The clock runs by itself, so the chain ends there. <a href="#switch-chain" data-chain="clock">The whole chain</a>`,
+  },
+  {
+    mode: 'explore',
+    explode: 1,
+    focus: 'driverBoard',
+    view: VIEW.high,
+    zoom: 0.9,
+    title: 'The gate driver gives the push',
+    body: `${chainStrip('driver', 'gate')}A microcontroller pin gives milliamperes, far too little to charge an IGBT module's gate quickly. This board turns each pulse into +15 V on and −8 V off with amperes of peak current, across an isolation barrier: each upper IGBT's emitter jumps 560 V at every edge. <a href="#switch-chain" data-chain="driver">More on the driver</a>`,
+  },
+  {
     device: 'sic',
     scale: 'app',
     mode: 'action',
@@ -511,3 +543,8 @@ export const TOUR = STEPS.reduce((out, step) => {
   });
   return out;
 }, []);
+
+// How long the tour takes: reading at 200 words a minute, plus 20 seconds a
+// step to look at the model.
+const words = (s) => `${s.title} ${s.body.replace(/<[^>]+>/g, ' ')}`.split(/\s+/).filter(Boolean).length;
+export const TOUR_MINUTES = Math.round(TOUR.reduce((n, s) => n + words(s), 0) / 200 + (TOUR.length * 20) / 60);

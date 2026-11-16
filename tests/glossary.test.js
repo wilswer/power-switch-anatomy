@@ -7,6 +7,7 @@ import { DEVICES } from '../exploded-views/js/devices/index.js';
 import { PACKAGES } from '../exploded-views/js/packages/index.js';
 import { APPS } from '../exploded-views/js/apps/index.js';
 import { FAILURES } from '../exploded-views/js/failures.js';
+import { STAGES } from '../exploded-views/js/control.js';
 
 const hit = (text, prefix = '') => {
   const r = findTerm(text, new Set(), prefix);
@@ -27,7 +28,7 @@ const HTML = readFileSync(new URL('../exploded-views/index.html', import.meta.ur
 const PAGE_TEXT = [
   HTML,
   ...TOUR.map((s) => s.body),
-  ...strings([Object.values(DEVICES), Object.values(PACKAGES), Object.values(APPS), FAILURES]),
+  ...strings([Object.values(DEVICES), Object.values(PACKAGES), Object.values(APPS), FAILURES, STAGES]),
 ];
 
 test('every glossary entry is complete, and no spelling belongs to two terms', () => {
@@ -69,6 +70,7 @@ test('terms match whole words in any case, the longest spelling first', () => {
 test('other senses of a word are left alone', () => {
   assert.equal(hit('coolant in a channel inside the floor'), null);
   assert.equal(hit('threshold drift shows'), null);
+  assert.equal(hit('an end-of-life threshold'), null, 'only the threshold voltage is a term');
   assert.equal(hit('the signals drift apart'), null);
   assert.equal(hit('Mounting holes'), null);
   assert.equal(hit('screw it to a heatsink through the hole'), null);

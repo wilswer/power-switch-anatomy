@@ -138,6 +138,8 @@ test('the tour explains converters, then visits each product at work', async () 
     'Converters: igbt/explore',
     'At work: igbt/explore',
     'At work: igbt/action',
+    'At work: igbt/explore', // what times the pulses: the control board
+    'At work: igbt/explore', // the gate-driver board
     'At work: sic/action',
     'At work: gan/action',
   ]);

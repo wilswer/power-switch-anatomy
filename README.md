@@ -74,10 +74,14 @@ Part cards link the scales ("See it in the package", "Open the cell view", "See 
 
 Below the viewer: a short physics primer, the glossary, "Converters in brief" (rectifiers,
 inverters, DC-DC and AC-AC converters, and why switching wastes so little) with **Switching,
-step by step**, an interactive figure of how switching changes a voltage or makes AC: set the
-duty cycle (or the sine it follows) and a filter's corner, and see the pulses, the filtered
-output and the spectrum of both (an FFT of the waveform and an LC filter applied to it,
-`switching.js`), Si / SiC / GaN comparison tables,
+step by step**, an interactive figure of how switching changes a voltage, makes AC or turns AC
+into DC (one phase of the car charger's active rectifier): set the duty cycle (or the sine it
+follows, or the power drawn) and the filter, and see the pulses, what the filter makes of them
+and the spectrum (an FFT of the waveform, with an LC filter or the inductor applied to it,
+`switching.js`), and behind the pulses, the controller's counter and compare value that time
+each switch-on; **What switches the switch**, the chain from the controller's clock through the
+gate driver to the gate, with the control loop and what each stage lets you measure
+(`control.js`), Si / SiC / GaN comparison tables,
 a field guide (the scales from cell to product, which products use which switch and
 package, how to read a datasheet, and safety notes for opening equipment), and, last,
 **Failure modes**: when devices fail (the bathtub curve), how lifetime is estimated from a
@@ -116,8 +120,9 @@ its own fonts.
 | `exploded-views/js/apps/` | The three products: 3D solids, power-flow paths, waveforms and their text |
 | `exploded-views/js/physics.js` | Field models for Blocking mode (pure functions) |
 | `exploded-views/js/thermal.js` | Heat-flow model for the package Heat mode (pure functions) |
-| `exploded-views/js/switching.js` | PWM waveforms, an FFT and an LC filter for Switching, step by step (pure functions) |
-| `exploded-views/js/switchplot.js`, `switching-ui.js` | Its two charts, and its controls and readouts |
+| `exploded-views/js/switching.js` | PWM waveforms from a counter and a compare value, an FFT, an LC filter and the active rectifier's inductor current for Switching, step by step (pure functions) |
+| `exploded-views/js/switchplot.js`, `switching-ui.js` | Its charts, and its controls and readouts |
+| `exploded-views/js/control.js`, `control-ui.js` | The stages of What switches the switch (pure data), and the figure that shows them |
 | `exploded-views/js/glossary.js` | The glossary terms, their definitions and the matcher that finds them in text (pure) |
 | `exploded-views/js/terms.js` | Marks glossary terms in rendered text and shows their definitions |
 | `exploded-views/js/aging.js` | Wear (cracked die attach, lifted wires) and the simulated power-cycling test (pure functions) |

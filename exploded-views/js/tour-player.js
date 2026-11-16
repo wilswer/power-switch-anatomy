@@ -1,4 +1,4 @@
-import { TOUR, CHAPTERS } from './tour.js';
+import { TOUR, CHAPTERS, TOUR_MINUTES } from './tour.js';
 import { reducedMotion } from './motion.js';
 import { markTerms } from './terms.js';
 
@@ -20,6 +20,7 @@ export function createTourPlayer({ els, applyStep, setLevel, onStart, onStop, on
   let opener = null; // the button that started the tour gets focus back
 
   for (const el of document.querySelectorAll('[data-tour-length]')) el.textContent = String(TOUR.length);
+  for (const el of document.querySelectorAll('[data-tour-minutes]')) el.textContent = String(TOUR_MINUTES);
 
   // Pointer shortcut only: keyboard users step with Back/Next or the arrow keys,
   // and the step position is announced in the card's kicker.

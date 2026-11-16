@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { TOUR, CHAPTERS } from '../exploded-views/js/tour.js';
+import { TOUR, CHAPTERS, TOUR_MINUTES } from '../exploded-views/js/tour.js';
 import { DEVICES } from '../exploded-views/js/devices/index.js';
 import { PACKAGES } from '../exploded-views/js/packages/index.js';
 import { APPS } from '../exploded-views/js/apps/index.js';
@@ -187,4 +187,25 @@ test('the aging step agrees with the aging model', () => {
   assert.ok(r.dR > 0.25 && r.eol.Rth, `R_th +${(r.dR * 100).toFixed(1)} %`);
   // "V_CE(on) is up about 4 %, just short of its +5 %"
   assert.ok(r.dV > 0.035 && r.dV < 0.045 && !r.eol.Von, `V +${(r.dV * 100).toFixed(1)} %`);
+});
+
+test('the page’s stated tour length is the computed one, even before the script runs', () => {
+  const html = readFileSync(new URL('../exploded-views/index.html', import.meta.url), 'utf8');
+  const stated = Number(html.match(/about <span data-tour-minutes>(\d+)<\/span> minutes/)[1]);
+  assert.equal(stated, TOUR_MINUTES);
+  assert.ok(TOUR_MINUTES > TOUR.length / 3 && TOUR_MINUTES < TOUR.length, `${TOUR_MINUTES} minutes for ${TOUR.length} steps`);
+});
+
+test('the control-chain steps highlight the boards they talk about, and open the matching stage', () => {
+  for (const [title, part, stage] of [
+    ['What times the pulses', 'controlBoard', 'clock'],
+    ['The gate driver gives the push', 'driverBoard', 'driver'],
+  ]) {
+    const st = TOUR.find((s) => s.title === title);
+    assert.ok(st, title);
+    assert.equal(st.scale, 'app');
+    assert.equal(st.focus, part);
+    assert.match(st.body, new RegExp(`href="#switch-chain" data-chain="${stage}"`));
+    assert.match(st.body, /class="chain-strip"/);
+  }
 });

@@ -904,6 +904,7 @@ h1 {
 .volt-head output {
   font: 600 22px/1 var(--font-display);
   letter-spacing: 0;
+  text-transform: none; /* units: kHz and mH, not KHZ and MH */
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
@@ -1314,6 +1315,8 @@ h1 {
 .waves-plot,
 .cycle-plot,
 .sw-time,
+.sw-pwm,
+.sw-cur,
 .sw-spec {
   position: relative;
 }
@@ -1748,9 +1751,39 @@ line.cy-von {
   stroke-dasharray: 5 3;
 }
 
+/* Behind the pulses: the counter, and shaded where the switch is on. */
+.sw-count {
+  stroke: var(--ink-2);
+  stroke-width: 1.2;
+}
+
+.sw-on {
+  fill: var(--ink);
+  opacity: 0.1;
+}
+
+/* The crosshair shows where the pointer is; a tint would hide the bands. */
+.sw-pwm-hit:hover {
+  fill: transparent;
+}
+
+/* AC to DC: the grid voltage, and the current drawn from it. */
+.sw-grid {
+  stroke: var(--ink);
+  stroke-width: 1.6;
+}
+
+.sw-current {
+  stroke: var(--plot-2);
+  stroke-width: 1.8;
+}
+
 line.sw-switched,
 line.sw-filtered,
-line.sw-target {
+line.sw-target,
+line.sw-count,
+line.sw-grid,
+line.sw-current {
   stroke-width: 2;
 }
 
@@ -1779,6 +1812,11 @@ line.sw-target {
 .sw-corner-label {
   font: 400 10px/1 var(--font-mono);
   fill: var(--ink-2);
+  /* A halo in the chart's background, so grid lines never cross the text. */
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 3px;
+  stroke-linejoin: round;
 }
 
 @media (max-width: 860px) {
@@ -1786,6 +1824,216 @@ line.sw-target {
     grid-template-columns: minmax(0, 1fr);
     padding: 14px;
   }
+}
+
+/* ---------- What switches the switch ---------- */
+
+.ctl {
+  display: grid;
+  gap: 10px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.ctl-chain {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.ctl-chain li {
+  position: relative;
+  min-width: 0;
+}
+
+/* The signal runs left to right: an arrow into each stage after the first. */
+.ctl-chain li + li::before {
+  content: "";
+  position: absolute;
+  left: -18px;
+  top: 50%;
+  width: 14px;
+  border-top: 1.5px solid var(--ink-2);
+}
+
+.ctl-chain li + li::after {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: calc(50% - 4px);
+  border: 4px solid transparent;
+  border-left: 6px solid var(--ink-2);
+  border-right: 0;
+}
+
+.ctl-stage {
+  appearance: none;
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  width: 100%;
+  height: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  background: var(--stage);
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.ctl-stage:hover {
+  border-color: var(--ink-3);
+}
+
+.ctl-stage[aria-pressed="true"] {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+.ctl-stage b {
+  font: 600 14.5px/1.2 var(--font-display);
+}
+
+.ctl-n {
+  font: 500 10.5px/1 var(--font-mono);
+  color: var(--ink-3);
+}
+
+.ctl-sig {
+  font: 400 11.5px/1.35 var(--font-mono);
+  color: var(--ink-2);
+}
+
+.ctl-glyph {
+  width: 64px;
+  height: 24px;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.ctl-glyph .ctl-dashed {
+  stroke: var(--ink-3);
+  stroke-dasharray: 3 2;
+}
+
+/* The loop runs back under the chain, from the switch to the PWM unit. */
+.ctl-loop {
+  --skip: calc((100% - 4 * 22px) / 5 + 22px); /* one stage and a gap */
+  position: relative;
+  width: calc(100% - var(--skip));
+  margin-left: var(--skip);
+  padding-left: 30px;
+  border-style: dashed;
+}
+
+.ctl-loop::before {
+  content: "↩";
+  position: absolute;
+  left: 10px;
+  top: 9px;
+  font: 600 15px/1 var(--font-display);
+  color: var(--ink-2);
+}
+
+.ctl-detail {
+  padding-top: 4px;
+}
+
+.ctl-detail .kicker {
+  margin-bottom: 4px;
+}
+
+.ctl-part {
+  margin: 0 0 10px;
+  font: 600 17px/1.25 var(--font-display);
+}
+
+.ctl-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 24px;
+}
+
+.ctl-cols p:not(.kicker) {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+@media (max-width: 860px) {
+  .ctl {
+    padding: 14px;
+  }
+
+  .ctl-chain {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .ctl-chain li + li::before {
+    left: 24px;
+    top: -14px;
+    width: 0;
+    height: 10px;
+    border-top: 0;
+    border-left: 1.5px solid var(--ink-2);
+  }
+
+  .ctl-chain li + li::after {
+    left: 20px;
+    top: -6px;
+    border: 4px solid transparent;
+    border-top: 6px solid var(--ink-2);
+    border-bottom: 0;
+  }
+
+  .ctl-stage {
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    column-gap: 10px;
+  }
+
+  .ctl-stage .ctl-sig {
+    grid-column: 1 / -1;
+  }
+
+  .ctl-loop {
+    --skip: 0px;
+  }
+
+  .ctl-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The chain in a tour card: where this step is along it. */
+.chain-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 0;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+  font: 500 11px/1.4 var(--font-mono);
+  color: var(--ink-3);
+}
+
+.chain-strip li + li::before {
+  content: "→";
+  margin: 0 5px;
+  color: var(--ink-3);
+}
+
+.chain-strip .is-here {
+  color: var(--ink);
+  font-weight: 700;
 }
 
 /* ---------- glossary terms ---------- */

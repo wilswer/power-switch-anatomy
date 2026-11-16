@@ -35,7 +35,7 @@
           </p>
           <button type="button" class="cta" data-tour-start data-label="Take the guided tour">
             <span class="tour-start-label">Take the guided tour</span>
-            <span class="cta-meta"><span data-tour-length></span> steps · about 28 minutes</span>
+            <span class="cta-meta"><span data-tour-length></span> steps · about <span data-tour-minutes>30</span> minutes</span>
           </button>
         </div>
         <div class="pickers">
@@ -267,7 +267,7 @@
 
         <h3 class="table-title" id="switching">Switching, step by step</h3>
         <p class="intro sw-intro">
-          How can switching on and off change a voltage, or make AC? The switch chops the input into pulses, and a
+          How can switching on and off change a voltage, make AC, or turn AC into DC? The switch chops the input into pulses, and a
           filter of inductors and capacitors keeps only their average. Change how long each pulse lasts (the duty
           cycle) and the average follows. In frequency terms, the average is the low-frequency part of the pulses, and the
           switching pushes everything else up to the switching frequency, where the filter removes it.
@@ -277,6 +277,7 @@
             <div class="seg small" role="group" aria-label="Conversion">
               <button type="button" data-sw-mode="dc" aria-pressed="true">DC to lower DC</button>
               <button type="button" data-sw-mode="ac" aria-pressed="false">DC to AC</button>
+              <button type="button" data-sw-mode="rect" aria-pressed="false">AC to DC</button>
             </div>
             <div class="volt" data-sw-for="dc">
               <div class="volt-head"><label for="sw-d">Duty cycle: on for</label><output id="sw-d-out" for="sw-d"></output></div>
@@ -293,7 +294,17 @@
               <input type="range" id="sw-f" min="0" max="5" step="1" value="4" />
               <div class="volt-scale"><span>10 Hz</span><span>100 Hz</span></div>
             </div>
-            <div class="volt">
+            <div class="volt" data-sw-for="rect" hidden>
+              <div class="volt-head"><label for="sw-p">Power drawn from this phase</label><output id="sw-p-out" for="sw-p"></output></div>
+              <input type="range" id="sw-p" min="0" max="100" step="1" value="100" />
+              <div class="volt-scale"><span>light load</span><span>full: 16 A rms</span></div>
+            </div>
+            <div class="volt" data-sw-for="rect" hidden>
+              <div class="volt-head"><label for="sw-l">Inductor</label><output id="sw-l-out" for="sw-l"></output></div>
+              <input type="range" id="sw-l" min="0" max="100" step="0.5" value="83" />
+              <div class="volt-scale"><span>small</span><span>large</span></div>
+            </div>
+            <div class="volt" data-sw-for="dc ac">
               <div class="volt-head"><label for="sw-fc">Filter corner</label><output id="sw-fc-out" for="sw-fc"></output></div>
               <input type="range" id="sw-fc" min="0" max="100" step="0.5" value="33" />
               <div class="volt-scale"><span>strong filter</span><span>weak filter</span></div>
@@ -305,16 +316,36 @@
             <figure class="plot sw-time">
               <svg id="sw-time" role="img" aria-label="Switched voltage and filtered output over time"></svg>
             </figure>
+            <figure class="plot sw-pwm">
+              <svg id="sw-pwm" role="img" aria-label="The controller’s counter and compare value over time"></svg>
+            </figure>
+            <p class="sw-explain sw-pwm-text" id="sw-pwm-text"></p>
+            <figure class="plot sw-cur" data-sw-for="rect" hidden>
+              <svg id="sw-cur" role="img" aria-label="The current drawn from the grid over one grid cycle"></svg>
+            </figure>
             <figure class="plot sw-spec">
               <svg id="sw-spec" role="img" aria-label="Spectrum of the switched voltage, before and after the filter"></svg>
-              <figcaption>
+              <figcaption data-sw-for="dc ac">
                 Each line is one sine wave hidden in the pulses (their Fourier series). Light lines: in the switched
                 voltage. Dark lines: what is left after the filter, which passes what lies below its corner and cuts
                 what lies above.
               </figcaption>
+              <figcaption data-sw-for="rect" hidden>
+                The inductor current, split into its sine waves. The 50 Hz line is the current the controller asks
+                for. The lines near the switching frequency are the ripple, which the inductor keeps small: the higher
+                the frequency, the less current it lets through.
+              </figcaption>
             </figure>
           </div>
         </div>
+
+        <h3 class="table-title" id="switch-chain">What switches the switch</h3>
+        <p class="intro sw-intro">
+          The pulses above are timed by a few small circuits next to the switches, each one smaller and faster than
+          the one it drives. The chain does not end in yet another switch but in a clock that runs by itself, and a
+          control loop closes it. Click a stage.
+        </p>
+        <div class="ctl" id="ctl" role="group" aria-labelledby="switch-chain"></div>
 
         <div class="aside-pair">
           <article class="aside">
