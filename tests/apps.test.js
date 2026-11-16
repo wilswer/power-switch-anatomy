@@ -29,6 +29,13 @@ for (const app of Object.values(APPS)) {
     assert.equal(hit, null, hit && `${hit.a} and ${hit.b} overlap at x=${hit.x.toFixed(2)} z=${hit.z.toFixed(2)}`);
   });
 
+  test(`${app.name}: no part passes through another while it explodes`, () => {
+    for (const explode of [0.25, 0.5, 0.75, 1]) {
+      const hit = overlaps(solidsOfModel(app, new Set(), explode));
+      assert.equal(hit, null, hit && `at explode ${explode}, ${hit.a} and ${hit.b} overlap at x=${hit.x.toFixed(2)} z=${hit.z.toFixed(2)}`);
+    }
+  });
+
   test(`${app.name}: power paths, switches, spinning parts and links point at real things`, () => {
     const byId = new Map(app.parts.map((p) => [p.id, p]));
     const a = app.action;

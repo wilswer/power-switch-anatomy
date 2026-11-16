@@ -420,7 +420,7 @@ export default {
       label: 'DC+ terminal',
       name: 'DC+ terminal',
       kind: 'copper',
-      group: 8,
+      group: 12, // above the lid: its tab is folded over the lid's top
       solidInXray: true,
       anchor: [TERM.dcPlus.tab, Y.tab, -1.0],
       solids: terminal(...TERM.dcPlus.x, TERM.dcPlus.tab, TERM.dcPlus.hole),
@@ -439,7 +439,7 @@ export default {
       label: 'AC terminal (output)',
       name: 'AC output terminal',
       kind: 'copper',
-      group: 8,
+      group: 12, // above the lid: its tab is folded over the lid's top
       solidInXray: true,
       anchor: [TERM.ac.tab + 1.6, Y.tab, -1.0],
       solids: terminal(...TERM.ac.x, TERM.ac.tab, TERM.ac.hole),
@@ -458,7 +458,7 @@ export default {
       label: 'DC− terminal',
       name: 'DC− terminal',
       kind: 'copper',
-      group: 8,
+      group: 12, // above the lid: its tab is folded over the lid's top
       solidInXray: true,
       anchor: [TERM.dcMinus.tab + 1.6, Y.tab, -1.0],
       solids: terminal(...TERM.dcMinus.x, TERM.dcMinus.tab, TERM.dcMinus.hole),

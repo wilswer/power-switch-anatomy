@@ -1,5 +1,6 @@
 // Geometry helpers for the package and product tests: footprints, height
 // ranges and point tests for the 3D solids, and an overlap search.
+import { GAP } from '../exploded-views/js/constants.js';
 
 // Even-odd point-in-polygon test in the x–z plane.
 export function inside([px, pz], poly) {
@@ -47,12 +48,20 @@ export function shape(s) {
 
 // Every non-tube solid of a model, tagged with its part (a pickAs part counts
 // as the part it picks as). Parts whose kind is in `skipKinds` are left out.
-export const solidsOfModel = (model, skipKinds = new Set()) =>
+// `explode` (0–1) lifts each part as the viewer does: by its group times the
+// model's gap.
+export const solidsOfModel = (model, skipKinds = new Set(), explode = 0) =>
   model.parts
     .filter((p) => !skipKinds.has(p.kind))
-    .flatMap((p) =>
-      (p.solids ?? []).filter((s) => s.type !== 'tube').map((s) => ({ id: p.pickAs ?? p.id, kind: p.kind, ...shape(s) })),
-    );
+    .flatMap((p) => {
+      const lift = (p.group ?? 0) * (model.gap ?? GAP) * explode;
+      return (p.solids ?? [])
+        .filter((s) => s.type !== 'tube')
+        .map((s) => {
+          const sh = shape(s);
+          return { id: p.pickAs ?? p.id, kind: p.kind, ...sh, y0: sh.y0 + lift, y1: sh.y1 + lift };
+        });
+    });
 
 // The first place where two solids of different parts share volume, or null.
 export function overlaps(solids) {

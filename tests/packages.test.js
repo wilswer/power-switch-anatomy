@@ -28,6 +28,13 @@ for (const pkg of Object.values(PACKAGES)) {
     assert.equal(hit, null, hit && `${hit.a} and ${hit.b} overlap at x=${hit.x.toFixed(2)} z=${hit.z.toFixed(2)}`);
   });
 
+  test(`${pkg.name}: no part passes through another while it explodes`, () => {
+    for (const explode of [0.25, 0.5, 0.75, 1]) {
+      const hit = overlaps(solidsOfModel(pkg, FILLS, explode));
+      assert.equal(hit, null, hit && `at explode ${explode}, ${hit.a} and ${hit.b} overlap at x=${hit.x.toFixed(2)} z=${hit.z.toFixed(2)}`);
+    }
+  });
+
   test(`${pkg.name}: every bond wire starts and ends on a metal surface`, () => {
     const metals = solidsOfModel(pkg).filter((s) => ['aluminum', 'copper'].includes(s.kind));
     for (const p of pkg.parts) {

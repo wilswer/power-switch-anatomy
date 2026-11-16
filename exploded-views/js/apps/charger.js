@@ -9,6 +9,12 @@ const CASE = 5.2;
 const WALL = 0.3;
 const SEAM = 3.0;
 const USB = { x: 0.9, y0: 0.95, y1: 1.65 };
+// The port's opening in the case, with 0.15 mm of clearance all around: no
+// face of the port lies in a face of the case, which some browsers draw as
+// flicker. The opening is a slot in the bottom shell, open to the seam, closed
+// above the port by a tongue on the top shell, so the exploded port lifts out
+// of the slot instead of through a wall.
+const HOLE = { x: USB.x + 0.03, y0: USB.y0 - 0.03, y1: USB.y1 + 0.03 };
 const PCB = { y0: 0.8, y1: 0.95 };
 const T = transformer({ cx: 1.1, cz: -0.4, w: 3.0, d: 1.4, y0: PCB.y1, y1: 3.9, bulge: 0.5 });
 
@@ -99,10 +105,9 @@ export default {
         box(-CASE, 0.2, -CASE, CASE, SEAM, -CASE + WALL),
         box(-CASE, 0.2, -CASE + WALL, -CASE + WALL, SEAM, CASE - WALL),
         box(CASE - WALL, 0.2, -CASE + WALL, CASE, SEAM, CASE - WALL),
-        box(-CASE, 0.2, CASE - WALL, -USB.x, SEAM, CASE),
-        box(USB.x, 0.2, CASE - WALL, CASE, SEAM, CASE),
-        box(-USB.x, 0.2, CASE - WALL, USB.x, USB.y0, CASE),
-        box(-USB.x, USB.y1, CASE - WALL, USB.x, SEAM, CASE),
+        box(-CASE, 0.2, CASE - WALL, -HOLE.x, SEAM, CASE),
+        box(HOLE.x, 0.2, CASE - WALL, CASE, SEAM, CASE),
+        box(-HOLE.x, 0.2, CASE - WALL, HOLE.x, HOLE.y0, CASE),
       ],
       info: {
         facts: [
@@ -319,6 +324,7 @@ export default {
       solids: [
         slab(rectXZ(-CASE, -CASE, CASE, CASE), SEAM, 5.8, [rectXZ(-CASE + WALL, -CASE + WALL, CASE - WALL, CASE - WALL)]),
         box(-CASE, 5.8, -CASE, CASE, 6.0, CASE),
+        box(-HOLE.x, HOLE.y1, CASE - WALL, HOLE.x, SEAM, CASE), // the tongue over the USB-C port
       ],
       info: {
         facts: [['Material', 'The same plastic as the bottom shell']],
